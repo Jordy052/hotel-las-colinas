@@ -1,29 +1,32 @@
-# Publicación de la API
+# Alojamiento de Hotel Las Colinas
 
-Estado: archivos preparados; servicios remotos todavía no creados ni enlazados.
+Estado al 4 de noviembre de 2026:
 
-La web sigue en GitHub Pages. Render ejecuta la API Python y Aiven aloja una única base MySQL compartida con administración y recepción. Seleccionar los planes Free; no activar pruebas de planes de pago.
+- Web: https://jordy052.github.io/hotel-las-colinas/
+- API HTTPS: https://hotel-las-colinas-api.onrender.com/api
+- Servicio Render: hotel-las-colinas-api, plan Free, una instancia.
+- MySQL Aiven: hotel-las-colinas-mysql, plan Free. Es la base única compartida por web, administración y recepción.
+- Migración: 11 habitaciones, cuentas, huéspedes, reservas, pagos y permisos copiados y comparados con el respaldo. Las 22 fotografías están almacenadas en MySQL con verificación SHA-256.
+- Correo: transporte HTTPS preparado; pendiente completar la cuenta, remitente verificado y clave de Brevo para habilitar registro y recuperación en Render Free.
 
-## Archivos
+## Configuración
 
-- Dockerfile: inicia la API sin instalar la interfaz gráfica de escritorio.
-- render.yaml: servicio Free, una instancia, puerto PORT y comprobación /api/health.
-- usuario/js/configuracion.js: única dirección de API para toda la web, incluida la liberación de habitaciones al abandonar el pago. Mientras publishedApiUrl esté vacío, solamente las páginas locales usan 127.0.0.1.
-- administrador/.env.example: configuración de CORS, origen público de fotografías y TLS de MySQL. Las credenciales reales nunca se incluyen en Git ni en JavaScript.
+usuario/js/configuracion.js contiene únicamente la dirección pública de la API. Los datos de MySQL y las claves de servicios se guardan en variables privadas de Render y archivos .env excluidos de GitHub. No se deben copiar contraseñas a JavaScript ni a este documento.
 
-## Pasos pendientes con las cuentas
+administrador/.env apunta a la base remota usando TLS y certificado CA verificado. Es necesario cerrar y volver a abrir las aplicaciones de administración y recepción para cargar esa configuración. La base local y su configuración anterior se conservaron como respaldo dentro de administrador/storage/backups/.
 
-1. Crear MySQL Free en Aiven. Guardar de forma privada host, puerto, usuario, contraseña, base y certificado CA. Importar el esquema y los datos existentes de hotel_reservas; no comenzar con una base vacía que pierda las habitaciones y cuentas.
-2. Configurar variables privadas del servicio Render usando esos datos. MYSQL_SSL=true y MYSQL_SSL_CA_PEM contiene el certificado CA. HOTEL_ALLOWED_ORIGINS incluye https://jordy052.github.io (sin ruta de repositorio).
-3. Configurar HOTEL_PUBLIC_BASE_URL con el origen HTTPS real asignado por Render. Poner esa misma dirección terminada en /api como publishedApiUrl en configuracion.js.
-4. Comprobar /api/health, listado y fotografías, acceso de invitados, autenticación, registro con código, reserva y cancelación antes de declarar la publicación terminada.
-5. Conectar las aplicaciones de administración y recepción a la MISMA base MySQL remota mediante TLS; mantener respaldo local y no borrar la base anterior durante la migración.
+Las fotos se guardan en room_photo_assets y se relacionan con room_photos. El escritorio mantiene una caché local para mostrarlas; la API las sirve desde MySQL. Se admiten imágenes de hasta 8 MB. El disco temporal de Render no es el almacenamiento principal.
 
-## Dependencias que también requieren adaptación
+## Comprobaciones realizadas
 
-- Fotografías: actualmente sus rutas apuntan a archivos locales de Windows. El disco gratuito de Render es temporal. Hay que migrar esas imágenes a almacenamiento persistente y adaptar la carga desde administración; copiar solo las tablas no basta.
-- Correo: Render Free bloquea los puertos SMTP 25, 465 y 587. El envío actual por Gmail debe usar un transporte HTTPS autorizado antes de que el registro y la recuperación funcionen en ese alojamiento. No desactivar los códigos para evitar esta limitación.
-- Sesiones y códigos: la API los conserva en memoria; usar una sola instancia. Reiniciar o suspender el servicio cierra esas sesiones y descarta códigos pendientes; para conservarlos entre reinicios hace falta almacenamiento compartido.
-- Render Free se suspende tras inactividad y puede tardar cerca de un minuto en despertar. Aiven Free tiene límites de almacenamiento y conexiones. Son planes para pruebas y demostraciones, no una garantía de disponibilidad continua.
+HTTPS, CORS de GitHub Pages, MySQL TLS, listado de habitaciones y fotos, inicio de sesión, perfil, bloqueo temporal de habitación, repetición del pago sin duplicar registros, cancelación y reembolso, cierre de sesión. Los registros temporales de las pruebas se eliminaron. No se realizaron cobros externos ni se enviaron correos de prueba.
 
-Referencias: https://render.com/docs/free · https://render.com/docs/web-services · https://aiven.io/docs/products/mysql/concepts/mysql-free-tier
+## Límites del plan gratuito
+
+Render Free se suspende tras inactividad y puede tardar cerca de un minuto en despertar. Las sesiones y los códigos de verificación están en memoria y se pierden cuando se reinicia el proceso; en ese caso se inicia sesión o se solicita otro código. Se usa una sola instancia.
+
+Render Free bloquea SMTP en los puertos 25, 465 y 587. Por eso el correo remoto utiliza Brevo mediante HTTPS cuando se complete su configuración. La instalación local conserva su transporte SMTP.
+
+Aiven Free tiene límites de almacenamiento y conexiones y puede apagarse por inactividad. Estos planes sirven para pruebas y demostraciones; no garantizan disponibilidad continua.
+
+Referencias: https://render.com/docs/free · https://aiven.io/docs/products/mysql/concepts/mysql-free-tier · https://developers.brevo.com/docs/send-a-transactional-email

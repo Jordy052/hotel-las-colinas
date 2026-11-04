@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title">
+  <title id="title">Vista amplia del espacio de una habitación de hotel</title>
+  <defs>
+    <linearGradient id="wall" x2="0" y2="1">
+      <stop stop-color="#e9deca"/>
+      <stop offset="1" stop-color="#c6b18e"/>
+    </linearGradient>
+    <linearGradient id="sunlight" x2="1" y2="1">
+      <stop stop-color="#f8e7bd" stop-opacity=".82"/>
+      <stop offset="1" stop-color="#e8cc91" stop-opacity=".08"/>
+    </linearGradient>
+    <linearGradient id="wood" x2="0" y2="1">
+      <stop stop-color="#815d3d"/>
+      <stop offset="1" stop-color="#533b2a"/>
+    </linearGradient>
+    <linearGradient id="linen" x2="0" y2="1">
+      <stop stop-color="#fff"/>
+      <stop offset="1" stop-color="#e4e9e5"/>
+    </linearGradient>
+    <linearGradient id="window" x2="1" y2="1">
+      <stop stop-color="#aed0c1"/>
+      <stop offset=".52" stop-color="#d9e5c9"/>
+      <stop offset="1" stop-color="#6d9777"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="760" fill="url(#wall)"/>
+  <path d="M0 0h1200v507H0z" fill="#e8dece"/>
+  <path d="M0 507h1200v253H0z" fill="#9b8060"/>
+  <path d="M0 590h1200M0 674h1200" stroke="#70563d" stroke-opacity=".35" stroke-width="4"/>
+
+  <!-- Ventanal y balcón tropical -->
+  <rect x="72" y="61" width="390" height="399" rx="4" fill="#59422f"/>
+  <rect x="87" y="76" width="360" height="369" fill="url(#window)"/>
+  <path d="M87 336q49-85 104-42t98-65 158-22v238H87z" fill="#63896c"/>
+  <path d="M87 374q72-38 134-13t106-32 120-8v124H87z" fill="#92a97d"/>
+  <path d="M266 76v369M87 258h360" stroke="#77583d" stroke-width="11"/>
+  <rect x="447" y="104" width="24" height="343" fill="#6c4c31"/>
+  <path d="M112 76v369" stroke="#f2e4c9" stroke-width="18" opacity=".68"/>
+  <path d="M104 77l324 365" stroke="url(#sunlight)" stroke-width="140" opacity=".62"/>
+
+  <!-- Cabecera y cama amplia -->
+  <rect x="560" y="122" width="517" height="264" rx="12" fill="url(#wood)"/>
+  <rect x="584" y="145" width="469" height="219" rx="8" fill="#96744d"/>
+  <rect x="618" y="198" width="398" height="211" rx="32" fill="url(#linen)"/>
+  <rect x="650" y="183" width="149" height="86" rx="19" fill="#fff"/>
+  <rect x="827" y="183" width="149" height="86" rx="19" fill="#fff"/>
+  <rect x="699" y="245" width="268" height="56" rx="14" fill="#4c7f7c"/>
+  <path d="M620 315h393l18 178H602z" fill="#f7f4eb"/>
+  <path d="M812 319v170" stroke="#d9ded8" stroke-width="3"/>
+  <path d="M602 493h430v22H602z" fill="#72543a"/>
+  <path d="M633 515v60m366-60v60" stroke="#543b29" stroke-width="14"/>
+
+  <!-- Mesas y lámparas -->
+  <rect x="498" y="393" width="105" height="28" rx="5" fill="#66472f"/>
+  <rect x="1015" y="393" width="105" height="28" rx="5" fill="#66472f"/>
+  <path d="M550 393v-90m516 90v-90" stroke="#6d5138" stroke-width="6"/>
+  <path d="M519 302h63l-10-33h-43zM1035 302h63l-10-33h-43z" fill="#f2d590"/>
+  <ellipse cx="550" cy="302" rx="37" ry="8" fill="#e1bd72"/>
+  <ellipse cx="1066" cy="302" rx="37" ry="8" fill="#e1bd72"/>
+  <path d="M525 421v96m50-96v96m465-96v96m50-96v96" stroke="#59402d" stroke-width="8"/>
+
+  <!-- Butaca, alfombra y planta -->
+  <path d="M157 545q240-72 445-22v172H157z" fill="#d3c3a4" opacity=".78"/>
+  <rect x="189" y="479" width="180" height="94" rx="31" fill="#17646a"/>
+  <rect x="177" y="540" width="205" height="91" rx="25" fill="#0c5259"/>
+  <rect x="198" y="613" width="13" height="47" fill="#513c2d"/>
+  <rect x="350" y="613" width="13" height="47" fill="#513c2d"/>
+  <rect x="405" y="572" width="102" height="15" rx="6" fill="#745238"/>
+  <path d="M420 587v55m74-55v55" stroke="#593f2b" stroke-width="8"/>
+  <path d="M1087 600v-128" stroke="#76553a" stroke-width="8"/>
+  <path d="M1085 518q-50-25-47-64 40 7 50 44 5-49 43-64 12 44-40 77 45-18 69 11-31 30-76 19z" fill="#527755"/>
+  <path d="M1037 604h99l-12 68h-75z" fill="#b68b5d"/>
+  <path d="M1030 604h113" stroke="#d1b27f" stroke-width="8"/>
+  <path d="M0 0h1200v760H0z" fill="#4a392a" opacity=".035"/>
+</svg>

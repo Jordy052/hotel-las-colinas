@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.py[cod]
+.venv/
+storage/room_photos/*
+!storage/room_photos/.gitkeep

@@ -1,0 +1,276 @@
+* {
+  box-sizing: border-box;
+}
+html {
+  min-width: 320px;
+}
+body {
+  margin: 0;
+  color: #173d45;
+  background: #f3f7f7;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button, input, select {
+  font: inherit;
+}
+.site-header {
+  min-height: 74px;
+  margin: 14px 20px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-radius: 12px;
+  background: #fff;
+}
+.brand {
+  font-size: 20px;
+  font-weight: 600;
+}
+.brand span {
+  display: block;
+  color: #476168;
+  font-size: 13px;
+  font-weight: 400;
+}
+nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+nav a {
+  padding: 11px 16px;
+  border: 1px solid #cbdddd;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+nav a.current {
+  border: 1px solid #cbdddd;
+}
+.guest-label {
+  padding: 8px;
+  color: #476168;
+  font-size: 13px;
+}
+.button {
+  min-height: 44px;
+  padding: 11px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 16px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.button.primary {
+  border: 1px solid #076b78;
+  color: #fff;
+  background: #076b78;
+}
+.button.secondary {
+  color: #17444c;
+  border: 1px solid #c6dcdd;
+  background: #fff;
+}
+
+nav a:hover,
+.filter:hover,
+.button.secondary:hover {
+  background: #e3f0f0;
+}
+
+nav a:focus-visible,
+.button:focus-visible,
+.filter:focus-visible {
+  border: 2px solid #d6a14f;
+  outline: none;
+}
+
+.button.primary:hover {
+  background: #095660;
+}
+.site-footer {
+  padding: 20px;
+  color: #476168;
+  text-align: center;
+  font-size: 13px;
+}
+@media (max-width: 720px) {
+  .site-header {
+    margin: 10px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  nav {
+    width: 100%;
+  }
+}
+.reservations-page {
+  max-width: 1240px;
+  min-height: calc(100vh - 110px);
+  margin: 28px auto;
+  padding: 0 14px;
+}
+
+.page-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.page-heading h1 {
+  margin: 4px 0;
+  color: #173d45;
+  font-size: 25px;
+  font-weight: 600;
+}
+
+.page-heading p {
+  margin: 4px 0;
+  color: #476168;
+  font-size: 13px;
+}
+
+.page-heading h2 {
+  margin: 8px 0;
+  color: #173d45;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.reservation-list {
+  min-height: 650px;
+  padding: 12px 0;
+  background: transparent;
+}
+
+.empty-state {
+  margin: 0;
+  padding: 6px 0;
+  color: #173d45;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.reservation-card {
+  margin-bottom: 12px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr) 165px;
+  align-items: center;
+  gap: 22px;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.reservation-card img {
+  width: 210px;
+  height: 145px;
+  display: block;
+  object-fit: cover;
+}
+
+.reservation-card h2 {
+  margin: 8px 0;
+  color: #173d45;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.reservation-card p {
+  margin: 6px 0;
+  color: #173d45;
+  font-size: 14px;
+}
+
+.reservation-card .available {
+  color: #077665;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.reservation-card .reservation-meta,
+.reservation-total span {
+  color: #476168;
+  font-size: 13px;
+}
+
+.reservation-card .payment-state {
+  color: #826321;
+  font-size: 11px;
+}
+
+.reservation-total {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
+.reservation-total strong {
+  color: #076b78;
+  font-size: 21px;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .page-heading {
+    flex-direction: column;
+  }
+
+  .reservation-list {
+    min-height: 420px;
+  }
+
+  .reservation-card {
+    grid-template-columns: 1fr;
+  }
+
+  .reservation-card img {
+    width: 100%;
+    height: 190px;
+  }
+
+  .reservation-total {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .reservations-page {
+    margin-top: 22px;
+    padding: 0 12px;
+  }
+}
+
+.reservation-policy {
+  margin: 7px 0 0;
+  color: #476168;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.reservation-policy strong {
+  color: #173d45;
+}
+.reservation-policy.free-policy {
+  color: #28694e;
+}
+.reservation-policy.late-policy {
+  color: #8a4b20;
+}
+
+
+.arrival-notice { color: #076b78; font-size: 13px; line-height: 1.5; }
+#reservation-feedback:empty { display: none; }
+.en-route-button { white-space: normal; text-align: center; }
+.en-route-button:disabled { opacity: .65; cursor: wait; }

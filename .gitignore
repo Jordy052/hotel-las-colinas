@@ -1,0 +1,37 @@
+# Configuración privada y credenciales
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Entornos y cachés
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+node_modules/
+
+# Datos y archivos locales del hotel
+administrador/storage/
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.bak
+*.log
+*.xlsx
+*.pdf
+*.ini
+*_backup.sql
+
+# Editor y sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini

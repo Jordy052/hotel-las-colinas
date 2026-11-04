@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#076b78">
+  <link rel="icon" type="image/svg+xml" href="../img/hotel-las-colinas.svg">
+  <title>Confirmación | Hotel Las Colinas</title>
+  <link rel="stylesheet" href="../css/confirmacion.css?v=3">
+  <script src="../js/politica.js?v=60" defer></script>
+  <script src="../js/confirmacion.js?v=60" defer></script>
+  <link rel="stylesheet" href="../css/marca.css?v=1">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand hotel-brand" href="index.html"><img class="hotel-logo" src="../img/hotel-las-colinas.svg" alt=""><span class="hotel-brand-copy"><strong>Hotel Las Colinas</strong><small>Puerto Cabezas, Nicaragua</small></span></a>
+    <nav aria-label="Navegación principal">
+      <a href="habitaciones.html">Habitaciones</a>
+      <a href="reservas.html">Mis reservas</a>
+      <a href="mi-cuenta.html">Mi cuenta</a>
+      <span class="guest-label">Invitado</span>
+    </nav>
+  </header>
+
+  <main class="confirmation-page">
+    <section class="confirmation-card" aria-labelledby="confirmation-title">
+      <div class="success-icon" aria-hidden="true">
+        <svg viewBox="0 0 48 48">
+          <path d="m13 24 7 7 15-16"></path>
+        </svg>
+      </div>
+      <p class="eyebrow">PASO 3 DE 3</p>
+      <h1 id="confirmation-title">¡Reserva confirmada!</h1>
+      <p class="confirmation-intro">Tu reserva se ha registrado correctamente. Consulta los detalles de tu estancia a continuación.</p>
+
+      <div class="confirmation-code">
+        <div>
+          <span>CÓDIGO DE RESERVA</span>
+          <strong data-confirmation-code></strong>
+        </div>
+        <span class="payment-status">PAGO REGISTRADO</span>
+      </div>
+
+      <div class="confirmation-details">
+        <img src="../img/rooms/doble.png" alt="" data-confirmation-image>
+        <div class="stay-info">
+          <h2 data-confirmation-room></h2>
+          <p data-confirmation-beds></p>
+          <p data-confirmation-dates></p>
+          <p data-confirmation-guests></p>
+          <p data-confirmation-policy></p>
+        </div>
+        <div class="confirmation-total">
+          <strong data-confirmation-total></strong>
+          <span>Total de la estadía</span>
+        </div>
+      </div>
+
+      <div class="demo-notice">
+        <strong>Comprobante de reserva</strong>
+        Conserva tu código de reserva para presentarlo a tu llegada al hotel.
+      </div>
+
+      <div class="confirmation-actions">
+        <a class="button primary" href="factura.html" data-invoice-link>Ver comprobante</a>
+        <a class="button secondary" href="reservas.html">Ver mis reservas</a>
+        <a class="button secondary" href="habitaciones.html">Explorar habitaciones</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    Puerto Cabezas, Nicaragua · Hotel Las Colinas
+  </footer>
+</body>
+</html>

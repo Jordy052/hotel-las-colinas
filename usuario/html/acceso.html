@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="../img/hotel-las-colinas.svg">
+  <title>Iniciar sesión | Hotel Las Colinas</title>
+  <link rel="stylesheet" href="../css/acceso.css?v=14">
+  <script src="../js/acceso.js?v=60" defer></script>
+  <link rel="stylesheet" href="../css/marca.css?v=1">
+</head>
+<body class="auth-page login-page">
+  <main class="auth-layout">
+    <section class="auth-card">
+      <header class="auth-heading">
+        <svg class="header-decoration" viewBox="0 0 180 176" aria-hidden="true">
+          <g fill="none" stroke="rgba(255,255,255,.086)" stroke-width="1.5">
+            <rect x="45" y="57" width="147" height="235" rx="73"></rect>
+            <rect x="70" y="82" width="147" height="235" rx="73"></rect>
+            <rect x="95" y="107" width="147" height="235" rx="73"></rect>
+          </g>
+          <g fill="none" stroke="#E9AD56" stroke-width="2" stroke-linecap="round">
+            <path d="M122 38v12M116 44h12"></path>
+          </g>
+          <circle cx="84" cy="80" r="2" fill="#E9AD56"></circle>
+        </svg>
+        <a class="auth-brand" href="index.html">
+          <img class="hotel-logo" src="../img/hotel-las-colinas.svg" alt="">
+          HOTEL LAS COLINAS
+        </a>
+        <h1>Inicio de sesión</h1>
+        <p>Bienvenido. Tu estancia comienza aquí.</p>
+      </header>
+
+      <section class="form-panel">
+        <h2>Accede a tu cuenta</h2>
+        <p class="form-intro">Ingresa con tu correo electrónico y contraseña.</p>
+
+        <form id="login-form" novalidate>
+          <label for="email">Correo electrónico</label>
+          <div class="input-shell">
+            <svg class="field-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="5" width="18" height="14" rx="3"></rect>
+                <path d="m4 7 8 6 8-6"></path>
+              </g>
+            </svg>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="nombre@ejemplo.com"
+              autocomplete="email"
+              maxlength="160"
+              required
+            >
+          </div>
+
+          <label for="password">Contraseña</label>
+          <div class="input-shell">
+            <svg class="field-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="10" width="14" height="11" rx="3"></rect>
+                <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"></path>
+              </g>
+            </svg>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="Tu contraseña"
+              autocomplete="current-password"
+              maxlength="30"
+              required
+            >
+            <button
+              class="password-toggle"
+              type="button"
+              aria-label="Mostrar contraseña"
+              aria-pressed="false"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 12c5-8 15-8 20 0-5 8-15 8-20 0Z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path class="eye-slash" d="m4 4 16 16"></path>
+                </g>
+              </svg>
+            </button>
+          </div>
+
+          <p class="text-right">
+            <a href="cambiar-clave.html">Cambiar contraseña</a>
+          </p>
+          <p id="form-message" class="form-message" aria-live="polite" role="status"></p>
+          <button class="button primary full-width" type="submit">Iniciar sesión</button>
+          <p class="demo-auth-note">Inicia sesión con tu cuenta registrada. Los datos se validan en el sistema del hotel.</p>
+        </form>
+
+        <p class="form-link">
+          <a href="crear-cuenta.html">¿No tienes una cuenta? Crear cuenta</a>
+        </p>
+      </section>
+    </section>
+
+    <a class="browse-link" href="habitaciones.html">
+      Explorar habitaciones
+    </a>
+    <p class="auth-footer">TU ESTADÍA EN PUERTO CABEZAS, NICARAGUA</p>
+  </main>
+</body>
+</html>
+
+
+
+
+
+
+
+
+

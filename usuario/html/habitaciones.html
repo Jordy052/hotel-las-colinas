@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="../img/hotel-las-colinas.svg">
+  <title>Habitaciones | Hotel Las Colinas</title>
+  <link rel="stylesheet" href="../css/habitaciones.css?v=70">
+  <link rel="stylesheet" href="../css/calendario.css?v=1">
+  <script src="../js/politica.js?v=60" defer></script>
+  <script src="../js/habitaciones.js?v=70" defer></script>
+  <script src="../js/calendario.js?v=60" defer></script>
+  <link rel="stylesheet" href="../css/marca.css?v=1">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand hotel-brand" href="index.html"><img class="hotel-logo" src="../img/hotel-las-colinas.svg" alt=""><span class="hotel-brand-copy"><strong>Hotel Las Colinas</strong><small>Puerto Cabezas, Nicaragua</small></span></a>
+    <nav aria-label="Navegación principal">
+      <a class="current" href="habitaciones.html">Habitaciones</a>
+      <a href="reservas.html">Mis reservas</a>
+      <a href="mi-cuenta.html">Mi cuenta</a>
+      <span class="guest-label">Invitado</span>
+    </nav>
+  </header>
+
+  <main>
+    <section class="rooms-hero">
+      <div>
+        <h1>Encuentra tu próxima<br>estadía en Puerto Cabezas</h1>
+        <p>Elige tu habitación y disfruta tu estancia. · Puerto Cabezas, Nicaragua</p>
+      </div>
+    </section>
+
+    <form class="search-panel" id="search-form">
+      <label for="arrival">Entrada</label>
+      <div class="date-control" id="arrival-control">
+        <input id="arrival" name="arrival" type="date" required>
+        <button
+          class="calendar-button"
+          type="button"
+          data-open-calendar="arrival"
+          aria-label="Abrir calendario de entrada"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <g
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="5" width="18" height="16" rx="4"></rect>
+              <path d="M7 3v4m10-4v4M3 10h18"></path>
+              <path d="M7 14h1m3 0h1m3 0h1m-8 3h1m3 0h1"></path>
+            </g>
+          </svg>
+        </button>
+      </div>
+
+      <label for="departure">Salida</label>
+      <div class="date-control" id="departure-control">
+        <input id="departure" name="departure" type="date" required>
+        <button
+          class="calendar-button"
+          type="button"
+          data-open-calendar="departure"
+          aria-label="Abrir calendario de salida"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <g
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="5" width="18" height="16" rx="4"></rect>
+              <path d="M7 3v4m10-4v4M3 10h18"></path>
+              <path d="M7 14h1m3 0h1m3 0h1m-8 3h1m3 0h1"></path>
+            </g>
+          </svg>
+        </button>
+      </div>
+
+      <label id="guests-label">Huéspedes</label>
+      <div class="guest-stepper" role="group" aria-labelledby="guests-label">
+        <button
+          class="guest-step-button"
+          id="guest-decrease"
+          type="button"
+          aria-label="Disminuir huéspedes"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m6 9 6 6 6-6"></path>
+          </svg>
+        </button>
+        <output
+          class="guest-count"
+          id="guest-count"
+          role="spinbutton"
+          aria-label="Número de huéspedes"
+          aria-valuemin="1"
+          aria-valuemax="4"
+          aria-valuenow="1"
+          aria-live="polite"
+        >1 persona</output>
+        <input id="guests" name="guests" type="hidden" value="1">
+        <button
+          class="guest-step-button"
+          id="guest-increase"
+          type="button"
+          aria-label="Aumentar huéspedes"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m6 15 6-6 6 6"></path>
+          </svg>
+        </button>
+      </div>
+
+      <button class="button primary search-button" type="submit">
+        Buscar disponibilidad
+      </button>
+    </form>
+
+    <section class="results-section">
+      <div class="result-heading">
+        <p id="search-summary" aria-live="polite"></p>
+        <label for="sort">Ordenar por</label>
+        <select id="sort" name="sort">
+          <option value="asc">Menor precio</option>
+          <option value="desc">Mayor precio</option>
+        </select>
+      </div>
+      <h2>Habitaciones disponibles</h2>
+      <div class="filters" aria-label="Filtrar habitaciones">
+        <button type="button" class="filter active" data-category="Todas">
+          Todas
+        </button>
+        <button type="button" class="filter" data-category="Individual">
+          Individual
+        </button>
+        <button type="button" class="filter" data-category="Doble">
+          Doble
+        </button>
+        <button type="button" class="filter" data-category="Matrimonial">
+          Matrimonial
+        </button>
+        <button type="button" class="filter" data-category="Familiar">
+          Familiar
+        </button>
+      </div>
+      <aside class="search-policy" aria-label="Horario y política de cancelación">
+        <section class="policy-schedule" aria-labelledby="policy-schedule-title">
+          <h3 id="policy-schedule-title"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Horario del hotel</h3>
+          <dl class="policy-times">
+            <div><dt>Entrada desde las</dt><dd data-check-in-time>2:00 p. m.</dd></div>
+            <div><dt>Salida hasta las</dt><dd data-check-out-time>12:00 p. m.</dd></div>
+          </dl>
+        </section>
+        <section class="policy-cancellation" aria-labelledby="policy-cancellation-title">
+          <h3 id="policy-cancellation-title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></svg>Cancelación gratuita</h3>
+          <p class="policy-deadline">Hasta el <strong data-search-cancellation aria-live="polite"></strong></p>
+          <p class="policy-explanation">Límite estimado; se fija al confirmar la reserva. Después del plazo, se retiene el <strong>30 %</strong> y se reembolsa el <strong>70 %</strong>.</p>
+          <p class="policy-footnote">Hora de Nicaragua.</p>
+        </section>
+      </aside>
+      <div class="room-grid" id="room-grid"></div>
+    </section>
+
+    <dialog class="room-dialog" id="room-details" aria-labelledby="dialog-room-name">
+      <header class="room-dialog-header">
+        <div>
+          <h2>Detalles de la habitación</h2>
+          <p>Conoce el espacio antes de reservar</p>
+        </div>
+        <button class="dialog-close" type="button" data-close-dialog aria-label="Cerrar detalles">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m7 7 10 10M17 7 7 17"></path>
+          </svg>
+        </button>
+      </header>
+
+      <div class="room-dialog-layout">
+        <section class="room-gallery" aria-label="Fotos de la habitación">
+          <div class="gallery-main">
+            <img class="gallery-image" data-gallery-image alt="">
+            <span class="gallery-count" data-gallery-count></span>
+            <button class="gallery-arrow gallery-previous" type="button" data-gallery-previous aria-label="Foto anterior">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m14.5 5-7 7 7 7"></path>
+              </svg>
+            </button>
+            <button class="gallery-arrow gallery-next" type="button" data-gallery-next aria-label="Foto siguiente">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m9.5 5 7 7-7 7"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="gallery-thumbnails" data-gallery-thumbnails aria-label="Seleccionar foto"></div>
+        </section>
+
+        <section class="room-dialog-info">
+          <span class="dialog-category" data-dialog-category></span>
+          <h3 id="dialog-room-name" data-dialog-name></h3>
+          <p class="dialog-description">Un espacio cómodo y luminoso para disfrutar tu estadía en Puerto Cabezas.</p>
+          <div class="dialog-divider"></div>
+          <h4>Características</h4>
+          <ul class="dialog-features">
+            <li><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.5 20v-1.6a6.5 6.5 0 0 1 13 0V20z"></path></svg></span><span><strong data-dialog-capacity></strong><small>Capacidad máxima</small></span></li>
+            <li><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12v7m16-7v7M4 15h16M6 12V8.5A2.5 2.5 0 0 1 8.5 6h1A2.5 2.5 0 0 1 12 8.5V12m0-2h5a3 3 0 0 1 3 3"></path></svg></span><span><strong data-dialog-beds></strong><small>Ropa de cama incluida</small></span></li>
+            <li><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14v7H5zM8 12V8a4 4 0 0 1 8 0v4m-5 3h2m-4 4v2m6-2v2"></path></svg></span><span><strong>Baño privado</strong><small>Ducha y artículos básicos</small></span></li>
+            <li><span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 9a10 10 0 0 1 14 0M8 12a6 6 0 0 1 8 0m-5 4a2 2 0 0 1 2 0m-1 4h.01"></path></svg></span><span><strong>Wi-Fi y aire acondicionado</strong><small>Comodidades incluidas</small></span></li>
+          </ul>
+          <div class="dialog-divider"></div>
+          <p class="dialog-dates" data-dialog-dates></p>
+          <p class="dialog-price-label">Desde</p>
+          <p class="dialog-price" data-dialog-rate></p>
+          <p class="dialog-total" data-dialog-total></p>
+          <div class="dialog-policy" aria-label="Horario y cancelación">
+            <p><strong>Entrada:</strong> desde las <span data-dialog-check-in></span> · <strong>Salida:</strong> hasta las <span data-dialog-check-out></span>.</p>
+            <p><strong>Cancelación:</strong> sin cargo hasta <span data-dialog-cancellation-deadline></span>. Límite estimado que se fija al confirmar. Después: cargo del 30 % y reembolso del 70 %.</p>
+          </div>
+          <button class="button primary dialog-reserve" type="button" data-dialog-reserve>Reservar habitación</button>
+          <p class="dialog-note">Revisa las fechas y los detalles de la habitación antes de continuar.</p>
+        </section>
+      </div>
+    </dialog>
+  </main>
+
+  <footer class="site-footer">
+    Puerto Cabezas, Nicaragua · Precios en córdobas (C$).
+  </footer>
+</body>
+</html>

@@ -1,0 +1,12 @@
+.brand.hotel-brand {display:inline-flex;align-items:center;gap:12px;min-width:0;}
+.hotel-logo {display:block;width:44px;height:44px;flex:0 0 auto;}
+.brand .hotel-brand-copy {display:block;color:inherit;font-size:20px;font-weight:600;line-height:1.25;}
+.hotel-brand-copy strong {font:inherit;}
+.hotel-brand-copy small {display:block;margin-top:4px;color:#476168;font-size:12px;font-weight:400;}
+.auth-brand .hotel-logo,.profile-brand .hotel-logo {width:34px;height:34px;}
+.auth-brand {letter-spacing:1.3px;gap:8px;}
+.profile-brand {gap:8px;}
+.receipt-logo {width:52px;height:52px;margin-bottom:10px;}
+@media(max-width:480px){.brand .hotel-brand-copy {font-size:18px;}.hotel-logo {width:40px;height:40px;}.hotel-brand-copy small {font-size:11px;}}
+
+.login-page .auth-heading h1 {margin-top:26px;}

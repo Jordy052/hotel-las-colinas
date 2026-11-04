@@ -1,0 +1,145 @@
+* {
+  box-sizing: border-box;
+}
+html {
+  min-width: 320px;
+}
+body {
+  margin: 0;
+  color: #183f47;
+  background: #f2f6f6;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button, input, select {
+  font: inherit;
+}
+.site-header {
+  min-height: 74px;
+  margin: 14px 20px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-radius: 14px;
+  background: #fff;
+}
+.brand {
+  font-size: 19px;
+  font-weight: 700;
+}
+.brand span {
+  display: block;
+  color: #60777b;
+  font-size: 12px;
+  font-weight: 400;
+}
+.site-header nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.site-header nav a {
+  padding: 10px 14px;
+}
+.button {
+  min-height: 44px;
+  padding: 11px 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.button.primary {
+  color: #fff;
+  background: #087783;
+}
+.button.light {
+  color: #fff;
+  border: 1px solid #fff;
+  background: transparent;
+}
+.home-hero {
+  min-height: 530px;
+  margin: 0 20px;
+  padding: clamp(30px, 8vw, 100px);
+  display: flex;
+  align-items: center;
+  color: #fff;
+  background:
+    linear-gradient(90deg, rgba(5, 35, 39, .8), rgba(5, 35, 39, .14)),
+    url("../img/lobby_hotel.png") center / cover;
+}
+.hero-copy {
+  max-width: 620px;
+}
+.eyebrow {
+  color: #efb449;
+  letter-spacing: .16em;
+  font-size: 12px;
+}
+.home-hero h1 {
+  margin: 12px 0;
+  font-size: clamp(38px, 6vw, 66px);
+  line-height: 1.05;
+}
+.home-hero p {
+  max-width: 480px;
+}
+.actions {
+  margin-top: 25px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.home-features {
+  max-width: 1150px;
+  margin: auto;
+  padding: 36px 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+.home-features article {
+  padding: 22px;
+  border-radius: 14px;
+  background: #fff;
+}
+.home-features h2 {
+  font-size: 18px;
+}
+.home-features p, .site-footer {
+  color: #60777b;
+}
+.site-footer {
+  padding: 20px;
+  text-align: center;
+  font-size: 12px;
+}
+@media (max-width: 720px) {
+  .site-header {
+    margin: 10px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .site-header nav {
+    flex-wrap: wrap;
+  }
+  .home-hero {
+    min-height: 420px;
+    margin: 0 10px;
+    padding: 28px;
+  }
+  .home-features {
+    grid-template-columns: 1fr;
+  }
+}

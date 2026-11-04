@@ -1,0 +1,31 @@
+.contact-phone {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:7px 12px;margin:0 0 18px;}
+.contact-phone>div {min-width:0;}
+.contact-phone label {display:block;margin:0 0 7px;color:#315861;font-size:14px;font-weight:600;}
+.contact-phone input,.contact-phone select {box-sizing:border-box;width:100%;min-width:0;height:47px;padding:0 12px;border:1px solid #dbe8e8;border-radius:16px;background:#eff6f6;color:#15363d;font:inherit;font-size:14px;}
+.contact-phone input:focus,.contact-phone select:focus {outline:2px solid #168591;outline-offset:0;}
+.contact-phone input[aria-invalid="true"],.contact-phone select[aria-invalid="true"] {border-color:#bd3a35;}
+.contact-phone .phone-hint,.contact-phone .phone-error {grid-column:1/-1;margin:0;font-size:12px;line-height:1.5;}
+.contact-phone .phone-hint {color:#607d83;}
+.contact-phone .phone-error {color:#bd3a35;}
+.phone-error:empty {display:none;}
+.account-phone-form {margin-top:20px;padding-top:20px;border-top:1px solid #dbe8e8;}
+.account-phone-form h3 {margin:0 0 6px;color:#15363d;font-size:17px;}
+.account-phone-form>p {color:#607d83;font-size:13px;margin:0 0 18px;}
+.account-phone-form #phone-save-message {margin:10px 0 0;}
+.account-phone-form #phone-save-message[data-state="error"] {color:#bd3a35;}
+.account-phone-form #phone-save-message[data-state="success"] {color:#16733f;}
+@media(max-width:480px){.contact-phone {grid-template-columns:1fr;}}
+
+.account-phone-form[hidden] {display:none;}
+.account-phone-row .data-copy {min-width:0;flex:1;}
+.account-phone-row .data-copy>span {overflow-wrap:anywhere;}
+.phone-edit-button {margin-left:auto;flex:0 0 auto;border:1px solid #cbdddd;border-radius:10px;padding:8px 12px;background:#fff;color:#087986;font:inherit;font-size:12px;font-weight:600;cursor:pointer;}
+.phone-edit-button:hover {background:#e4f0f0;}
+.phone-edit-button:focus-visible {outline:2px solid #168591;outline-offset:2px;}
+.phone-edit-button:disabled {opacity:.5;cursor:default;}
+.phone-editor-actions {display:flex;gap:10px;flex-wrap:wrap;}
+.phone-editor-actions .secondary {background:#fff;border:1px solid #cbdddd;color:#315861;}
+#phone-save-message {font-size:13px;margin:12px 0 0;}
+#phone-save-message:empty {display:none;}
+#phone-save-message[data-state="success"] {color:#16733f;}
+#phone-save-message[data-state="error"] {color:#bd3a35;}

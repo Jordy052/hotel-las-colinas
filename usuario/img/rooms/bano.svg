@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title">
+  <title id="title">Baño privado de habitación de hotel</title>
+  <defs>
+    <linearGradient id="wall" x2="0" y2="1">
+      <stop stop-color="#eee9dc"/>
+      <stop offset="1" stop-color="#d9d1c0"/>
+    </linearGradient>
+    <linearGradient id="floor" x2="0" y2="1">
+      <stop stop-color="#c4b49a"/>
+      <stop offset="1" stop-color="#9b8768"/>
+    </linearGradient>
+    <linearGradient id="glass" x2="1" y2="1">
+      <stop stop-color="#dcebe5" stop-opacity=".42"/>
+      <stop offset="1" stop-color="#9fbeb4" stop-opacity=".16"/>
+    </linearGradient>
+    <linearGradient id="wood" x2="0" y2="1">
+      <stop stop-color="#77533a"/>
+      <stop offset="1" stop-color="#4f3828"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="760" fill="url(#wall)"/>
+  <path d="M0 0h1200v530H0z" fill="#e7e1d3"/>
+  <path d="M0 530h1200v230H0z" fill="url(#floor)"/>
+  <path d="M0 530h1200M0 607h1200M0 684h1200" stroke="#8e7c62" stroke-opacity=".38" stroke-width="3"/>
+  <path d="M90 0v530m170-530v530m170-530v530m170-530v530m170-530v530m170-530v530m170-530v530" stroke="#c5bba8" stroke-opacity=".42" stroke-width="2"/>
+
+  <!-- Ventana alta y ducha de vidrio -->
+  <rect x="104" y="72" width="350" height="392" rx="5" fill="#6d5842"/>
+  <rect x="117" y="85" width="324" height="366" fill="#bfd3c7"/>
+  <path d="M117 346q66-80 120-32t105-52 99-13v202H117z" fill="#6e9276"/>
+  <path d="M117 394q76-48 149-11t175-27v95H117z" fill="#8eaa82"/>
+  <path d="M279 85v366M117 263h324" stroke="#775d43" stroke-width="10"/>
+
+  <rect x="563" y="79" width="516" height="432" rx="5" fill="#c6bba7"/>
+  <rect x="577" y="93" width="488" height="404" fill="url(#glass)" stroke="#f9f7f0" stroke-width="5"/>
+  <path d="M825 95v402M579 497h485" stroke="#f5f2e9" stroke-width="7"/>
+  <path d="M594 458h446M594 469h446" stroke="#b5a78e" stroke-opacity=".55" stroke-width="2"/>
+  <path d="M760 199v54m0-44c-31 0-45 21-45 47m45-47c31 0 45 21 45 47" fill="none" stroke="#a7834f" stroke-width="8" stroke-linecap="round"/>
+  <path d="M746 264v47m18-47v47m18-47v47" stroke="#8fb9bd" stroke-width="4" stroke-linecap="round" opacity=".72"/>
+  <circle cx="760" cy="199" r="14" fill="#b9975c"/>
+
+  <!-- Mueble de madera y lavabo -->
+  <rect x="100" y="523" width="500" height="170" rx="8" fill="url(#wood)"/>
+  <rect x="79" y="502" width="541" height="38" rx="9" fill="#e9e4d7"/>
+  <path d="M80 532h540" stroke="#b7aa94" stroke-width="4"/>
+  <rect x="137" y="558" width="205" height="93" rx="5" fill="#5d422e"/>
+  <rect x="369" y="558" width="205" height="93" rx="5" fill="#5d422e"/>
+  <path d="M137 602h205m27 0h205" stroke="#a27a50" stroke-width="4"/>
+  <path d="M226 558v93m232-93v93" stroke="#805c3d" stroke-width="3"/>
+  <rect x="184" y="380" width="328" height="126" rx="24" fill="#d2cdc0"/>
+  <rect x="198" y="393" width="300" height="100" rx="20" fill="#f2eee4"/>
+  <ellipse cx="348" cy="440" rx="84" ry="34" fill="#c2d4d0"/>
+  <ellipse cx="348" cy="435" rx="62" ry="20" fill="#e7eee8"/>
+  <path d="M349 395v-32q0-19 21-19h8" fill="none" stroke="#a7834f" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="377" cy="344" r="7" fill="#a7834f"/>
+
+  <!-- Espejo redondo y luz ambiental -->
+  <circle cx="350" cy="220" r="104" fill="#c4b8a2"/>
+  <circle cx="350" cy="220" r="94" fill="#d9e6df" stroke="#f8f4ea" stroke-width="8"/>
+  <path d="M288 232q18-59 72-68 33-5 63 21" fill="none" stroke="#edf2e9" stroke-width="11" opacity=".82"/>
+  <circle cx="522" cy="195" r="17" fill="#e8c981"/>
+  <path d="M522 215v88" stroke="#9d8358" stroke-width="5"/>
+  <path d="M511 302h22l12 16h-46z" fill="#a58b60"/>
+
+  <!-- Toallas y planta -->
+  <rect x="923" y="531" width="111" height="24" rx="9" fill="#f5f2e9"/>
+  <rect x="936" y="553" width="111" height="24" rx="9" fill="#e9e6dc"/>
+  <path d="M1100 564v-128" stroke="#76553a" stroke-width="9"/>
+  <path d="M1098 471q-53-22-47-66 37 4 51 45 4-57 48-73 11 47-44 84 44-21 70 7-35 35-78 20z" fill="#587b5e"/>
+  <path d="M1054 574h105l-13 66h-79z" fill="#b68b5d"/>
+  <path d="M1048 574h117" stroke="#d1b27f" stroke-width="8"/>
+
+  <rect width="1200" height="760" fill="#163a36" opacity=".04"/>
+</svg>

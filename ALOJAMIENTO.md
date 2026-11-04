@@ -7,7 +7,7 @@ Estado al 4 de noviembre de 2026:
 - Servicio Render: hotel-las-colinas-api, plan Free, una instancia.
 - MySQL Aiven: hotel-las-colinas-mysql, plan Free. Es la base única compartida por web, administración y recepción.
 - Migración: 11 habitaciones, cuentas, huéspedes, reservas, pagos y permisos copiados y comparados con el respaldo. Las 22 fotografías están almacenadas en MySQL con verificación SHA-256.
-- Correo: transporte HTTPS preparado; pendiente completar la cuenta, remitente verificado y clave de Brevo para habilitar registro y recuperación en Render Free.
+- Correo: transporte HTTPS preparado con Google Apps Script. Pendiente autorizar el proyecto con la cuenta remitente y configurar su URL privada. Brevo queda como alternativa mientras su soporte revisa la verificación SMS.
 
 ## Configuración
 
@@ -25,8 +25,10 @@ HTTPS, CORS de GitHub Pages, MySQL TLS, listado de habitaciones y fotos, inicio 
 
 Render Free se suspende tras inactividad y puede tardar cerca de un minuto en despertar. Las sesiones y los códigos de verificación están en memoria y se pierden cuando se reinicia el proceso; en ese caso se inicia sesión o se solicita otro código. Se usa una sola instancia.
 
-Render Free bloquea SMTP en los puertos 25, 465 y 587. Por eso el correo remoto utiliza Brevo mediante HTTPS cuando se complete su configuración. La instalación local conserva su transporte SMTP.
+Render Free bloquea SMTP en los puertos 25, 465 y 587. Por eso el correo remoto utilizará Google Apps Script mediante HTTPS al completar la autorización; Brevo también está disponible como alternativa. La instalación local conserva su transporte SMTP.
 
 Aiven Free tiene límites de almacenamiento y conexiones y puede apagarse por inactividad. Estos planes sirven para pruebas y demostraciones; no garantizan disponibilidad continua.
 
 Referencias: https://render.com/docs/free · https://aiven.io/docs/products/mysql/concepts/mysql-free-tier · https://developers.brevo.com/docs/send-a-transactional-email
+
+El proyecto público de Apps Script está en administrador/apps_script/. Es una plantilla sin claves. El archivo preparado con la clave privada se guarda en administrador/storage/deployment/ y está excluido de GitHub. Las cuentas Gmail personales tienen una cuota de 100 destinatarios diarios.

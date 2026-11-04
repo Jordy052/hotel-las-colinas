@@ -59,6 +59,8 @@ SMTP_STARTTLS = os.getenv("HOTEL_SMTP_STARTTLS", "true").strip().lower() in {
 EMAIL_PROVIDER = os.getenv("HOTEL_EMAIL_PROVIDER", "smtp").strip().lower()
 EMAIL_FROM = os.getenv("HOTEL_EMAIL_FROM", "").strip() or SMTP_FROM
 BREVO_API_KEY = os.getenv("HOTEL_BREVO_API_KEY", "").strip()
+GOOGLE_MAIL_URL = os.getenv("HOTEL_GOOGLE_MAIL_URL", "").strip()
+GOOGLE_MAIL_SECRET = os.getenv("HOTEL_GOOGLE_MAIL_SECRET", "").strip()
 PASSWORD_RESET_SECRET = os.getenv("HOTEL_PASSWORD_RESET_SECRET", "")
 
 

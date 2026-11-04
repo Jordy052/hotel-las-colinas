@@ -104,7 +104,7 @@ def _validate_email_settings() -> None:
 
 def _deliver_security_email(message: EmailMessage) -> None:
     _validate_email_settings()
-    if config.EMAIL_PROVIDER == "brevo":
+    if config.EMAIL_PROVIDER in {"brevo", "google_apps_script"}:
         mail_delivery.send_https(message)
         return
     if config.SMTP_PORT == 465:

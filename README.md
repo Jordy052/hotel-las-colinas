@@ -96,3 +96,10 @@ usuario/
   js/                Comportamiento y llamadas a la API
   img/               Logo e imágenes incluidas en el proyecto
 ```
+
+
+## Sitio web en GitHub Pages
+
+La entrada pública es https://jordy052.github.io/hotel-las-colinas/ . El `index.html` de la raíz presenta el logo durante dos segundos y redirige a `usuario/html/index.html`. El enlace «Entrar ahora» permite omitir la presentación.
+
+GitHub Pages publica HTML, CSS, JavaScript e imágenes. Las funciones de inicio de sesión, registro y reservas requieren una API accesible por internet y su base MySQL; la configuración de este repositorio sigue apuntando a la API local. Publicar la web estática no despliega esa API ni MySQL.

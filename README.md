@@ -102,4 +102,4 @@ usuario/
 
 La entrada pública es https://jordy052.github.io/hotel-las-colinas/ . El `index.html` de la raíz presenta el logo durante dos segundos y redirige a `usuario/html/index.html`. El enlace «Entrar ahora» permite omitir la presentación.
 
-La web se conecta por HTTPS a https://hotel-las-colinas-api.onrender.com/api y usa MySQL remoto compartido con las aplicaciones de administración y recepción. Consulta ALOJAMIENTO.md para el estado del despliegue y los límites de los planes gratuitos. El envío de códigos en la nube requiere completar la configuración privada de correo HTTPS.
+La web se conecta por HTTPS a https://hotel-las-colinas-api.onrender.com/api y usa MySQL remoto compartido con las aplicaciones de administración y recepción. Consulta ALOJAMIENTO.md para el estado del despliegue y los límites de los planes gratuitos. El envío de códigos en la nube usa Google Apps Script mediante HTTPS con configuración privada en Render.

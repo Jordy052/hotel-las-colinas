@@ -1,9 +1,10 @@
 (function () {
-  const baseUrl = "http://127.0.0.1:8765/api";
+  const baseUrl = window.HotelRuntime.apiBaseUrl;
   const tokenKey = "hotel-session-token";
   const userKey = "hotel-demo-user";
 
   async function request(path, options) {
+    if (!baseUrl) throw new Error("El servicio del hotel aún no está publicado. Intenta nuevamente más tarde.");
     const settings = options || {};
     const headers = new Headers(settings.headers || {});
     headers.set("Accept", "application/json");
@@ -182,8 +183,10 @@ function renderReservations(reservations) {
 
 async function loadReservations() {
   if (!HotelApi.getToken()) {
-    sessionStorage.setItem("hotel-return-to", "reservas.html");
-    window.location.replace("acceso.html");
+    reservationCount.textContent = "";
+    document.querySelector(".page-heading p:nth-of-type(2)").hidden = true;
+    HotelGuest.showPage(reservationList, "Tus reservas en un solo lugar",
+      "Inicia sesión para consultar tus reservas y avisar al hotel cuando estés en camino. Si aún no tienes una cuenta, puedes crearla para reservar.", "reservas.html");
     return;
   }
   try {

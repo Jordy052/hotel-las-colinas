@@ -2,7 +2,8 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import Boolean, CheckConstraint, Column, Date, DateTime, ForeignKey, Integer, JSON, Numeric, String, Table, Text, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, Column, Date, DateTime, ForeignKey, Integer, JSON, LargeBinary, Numeric, String, Table, Text, UniqueConstraint
+from sqlalchemy.dialects.mysql import MEDIUMBLOB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -96,6 +97,20 @@ class RoomPhoto(Base):
     caption: Mapped[str] = mapped_column(String(120), nullable=False, default="")
     position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     room: Mapped[Room] = relationship(back_populates="photos")
+    asset: Mapped[Optional["RoomPhotoAsset"]] = relationship(
+        back_populates="photo", cascade="all, delete-orphan", uselist=False
+    )
+
+
+class RoomPhotoAsset(Base):
+    """Persistent image bytes shared by the API and desktop clients."""
+    __tablename__ = "room_photo_assets"
+
+    photo_id: Mapped[int] = mapped_column(ForeignKey("room_photos.id", ondelete="CASCADE"), primary_key=True)
+    content: Mapped[bytes] = mapped_column(LargeBinary().with_variant(MEDIUMBLOB(), "mysql"), nullable=False, deferred=True)
+    mime_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    photo: Mapped[RoomPhoto] = relationship(back_populates="asset")
 
 
 class Guest(Base):

@@ -182,3 +182,13 @@ CREATE TABLE IF NOT EXISTS booking_holds (
   FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
   FOREIGN KEY (reservation_id) REFERENCES reservations(id)
 ) ENGINE=InnoDB;
+
+-- Fotografías persistentes para compartir entre web, administración y recepción.
+CREATE TABLE IF NOT EXISTS room_photo_assets (
+  photo_id INT NOT NULL PRIMARY KEY,
+  content MEDIUMBLOB NOT NULL,
+  mime_type VARCHAR(80) NOT NULL,
+  sha256 VARCHAR(64) NOT NULL,
+  CONSTRAINT fk_room_photo_assets_photo
+    FOREIGN KEY (photo_id) REFERENCES room_photos (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

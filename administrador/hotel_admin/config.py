@@ -4,10 +4,6 @@ import re
 
 
 APP_DIR = Path(__file__).resolve().parent.parent
-STORAGE_DIR = APP_DIR / "storage"
-PHOTO_DIR = STORAGE_DIR / "room_photos"
-STORAGE_DIR.mkdir(parents=True, exist_ok=True)
-PHOTO_DIR.mkdir(parents=True, exist_ok=True)
 
 env_file = APP_DIR / ".env"
 if env_file.exists():
@@ -18,6 +14,11 @@ if env_file.exists():
         key, value = line.split("=", 1)
         os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
 
+# Optional storage mount for hosting. Local installations keep their existing directory.
+STORAGE_DIR = Path(os.getenv("HOTEL_STORAGE_DIR", str(APP_DIR / "storage"))).resolve()
+PHOTO_DIR = STORAGE_DIR / "room_photos"
+PHOTO_DIR.mkdir(parents=True, exist_ok=True)
+
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 MYSQL_HOST = os.getenv("MYSQL_HOST", "127.0.0.1").strip()
 MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
@@ -25,6 +26,9 @@ MYSQL_USER = os.getenv("MYSQL_USER", "").strip()
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
 MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "hotel_reservas").strip()
 MYSQL_CONNECT_TIMEOUT = int(os.getenv("MYSQL_CONNECT_TIMEOUT", "5"))
+MYSQL_SSL = os.getenv("MYSQL_SSL", "false").lower() in {"1", "true", "yes", "on"}
+MYSQL_SSL_CA = os.getenv("MYSQL_SSL_CA", "").strip()
+MYSQL_SSL_CA_PEM = os.getenv("MYSQL_SSL_CA_PEM", "").strip()
 
 BOOTSTRAP_ADMIN_EMAIL = os.getenv("HOTEL_BOOTSTRAP_ADMIN_EMAIL", "admin@hotel.local").strip().lower()
 BOOTSTRAP_ADMIN_PASSWORD = os.getenv("HOTEL_BOOTSTRAP_ADMIN_PASSWORD", "")
@@ -52,6 +56,9 @@ SMTP_FROM = os.getenv("HOTEL_SMTP_FROM", SMTP_USERNAME).strip()
 SMTP_STARTTLS = os.getenv("HOTEL_SMTP_STARTTLS", "true").strip().lower() in {
     "1", "true", "yes", "on"
 }
+EMAIL_PROVIDER = os.getenv("HOTEL_EMAIL_PROVIDER", "smtp").strip().lower()
+EMAIL_FROM = os.getenv("HOTEL_EMAIL_FROM", "").strip() or SMTP_FROM
+BREVO_API_KEY = os.getenv("HOTEL_BREVO_API_KEY", "").strip()
 PASSWORD_RESET_SECRET = os.getenv("HOTEL_PASSWORD_RESET_SECRET", "")
 
 

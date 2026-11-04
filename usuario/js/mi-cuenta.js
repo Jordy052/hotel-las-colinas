@@ -1,9 +1,10 @@
 (function () {
-  const baseUrl = "http://127.0.0.1:8765/api";
+  const baseUrl = window.HotelRuntime.apiBaseUrl;
   const tokenKey = "hotel-session-token";
   const userKey = "hotel-demo-user";
 
   async function request(path, options) {
+    if (!baseUrl) throw new Error("El servicio del hotel aún no está publicado. Intenta nuevamente más tarde.");
     const settings = options || {};
     const headers = new Headers(settings.headers || {});
     headers.set("Accept", "application/json");
@@ -111,8 +112,8 @@ function setProfile(user) {
 
 async function loadAccount() {
   if (!HotelApi.getToken()) {
-    sessionStorage.setItem("hotel-return-to", "mi-cuenta.html");
-    window.location.replace("acceso.html");
+    HotelGuest.showPage(document.querySelector(".account-grid"), "Tu cuenta en Hotel Las Colinas",
+      "Inicia sesión para consultar y actualizar tu información personal. Si aún no tienes una cuenta, créala para gestionar tus próximas estancias.", "mi-cuenta.html");
     return;
   }
   try {

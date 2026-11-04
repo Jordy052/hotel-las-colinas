@@ -1,9 +1,10 @@
+import ssl
 from sqlalchemy import URL, create_engine, func, inspect, select, text
 from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.orm import Session, sessionmaker
 
 from hotel_admin import config
-from hotel_admin.models import AppUser, Base, Permission, Role, BookingHold
+from hotel_admin.models import AppUser, Base, Permission, Role, BookingHold, RoomPhotoAsset
 from hotel_admin.security import hash_password
 
 
@@ -38,6 +39,17 @@ def _database_url() -> URL:
     )
 
 
+def _connection_options() -> dict:
+    options = {"connect_timeout": config.MYSQL_CONNECT_TIMEOUT}
+    if config.MYSQL_SSL:
+        context = ssl.create_default_context(cafile=config.MYSQL_SSL_CA or None)
+        if config.MYSQL_SSL_CA_PEM:
+            context.load_verify_locations(cadata=config.MYSQL_SSL_CA_PEM)
+        # Keep certificate and hostname verification enabled for the remote database.
+        options["ssl"] = context
+    return options
+
+
 def initialize_database() -> None:
     """Conecta con MySQL y valida el esquema creado desde MySQL Workbench."""
     global engine
@@ -45,12 +57,13 @@ def initialize_database() -> None:
         _database_url(),
         pool_pre_ping=True,
         pool_recycle=1800,
-        connect_args={"connect_timeout": config.MYSQL_CONNECT_TIMEOUT},
+        connect_args=_connection_options(),
     )
     try:
         with candidate.connect() as connection:
             connection.execute(text("SELECT 1"))
         BookingHold.__table__.create(candidate, checkfirst=True)
+        RoomPhotoAsset.__table__.create(candidate, checkfirst=True)
         _validate_existing_schema(candidate)
         _ensure_initial_admin(candidate)
     except Exception:

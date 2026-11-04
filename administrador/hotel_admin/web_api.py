@@ -26,15 +26,26 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload, selectinload
 
 from hotel_admin import config, billing, checkout
+from hotel_admin.photos import read_photo
+from hotel_admin import mail_delivery
 from hotel_admin.auth import AuthService
 from hotel_admin.database import SessionLocal, initialize_database
 from hotel_admin.models import AppUser, Guest, Payment, Reservation, Role, Room, RoomPhoto
 from hotel_admin.security import MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, hash_password, verify_password
 
 
-API_HOST = os.getenv("HOTEL_WEB_API_HOST", "127.0.0.1")
-API_PORT = int(os.getenv("HOTEL_WEB_API_PORT", "8765"))
-ALLOWED_ORIGINS = {"http://127.0.0.1:5500", "http://localhost:5500"}
+API_HOST = os.getenv("HOTEL_WEB_API_HOST", "0.0.0.0" if os.getenv("PORT") else "127.0.0.1")
+API_PORT = int(os.getenv("PORT") or os.getenv("HOTEL_WEB_API_PORT", "8765"))
+PUBLIC_BASE_URL = os.getenv("HOTEL_PUBLIC_BASE_URL", "").strip().rstrip("/")
+if PUBLIC_BASE_URL:
+    public_url = urlparse(PUBLIC_BASE_URL)
+    if public_url.scheme not in {"http", "https"} or not public_url.netloc or public_url.path or public_url.query or public_url.fragment or public_url.username:
+        raise RuntimeError("HOTEL_PUBLIC_BASE_URL debe ser el origen de la API, por ejemplo https://api.ejemplo.com.")
+ALLOWED_ORIGINS = {
+    origin.strip().rstrip("/")
+    for origin in os.getenv("HOTEL_ALLOWED_ORIGINS", "http://127.0.0.1:5500,http://localhost:5500").split(",")
+    if origin.strip()
+}
 TOKEN_TTL_SECONDS = 12 * 60 * 60
 PASSWORD_RESET_TTL_SECONDS = 10 * 60
 PASSWORD_RESET_RESEND_SECONDS = 60
@@ -67,14 +78,11 @@ def _password_reset_digest(email: str, code: str) -> bytes:
 
 
 def _send_password_reset_email(email: str, code: str) -> None:
-    if not config.SMTP_HOST or not config.SMTP_FROM:
-        raise ApiError(503, "El correo de recuperación aún no está configurado. Contacta al administrador.")
-    if bool(config.SMTP_USERNAME) != bool(config.SMTP_PASSWORD):
-        raise ApiError(503, "La configuración del correo de recuperación está incompleta.")
+    _validate_email_settings()
 
     message = EmailMessage()
     message["Subject"] = f"Código para restablecer tu contraseña · {config.HOTEL_NAME}"
-    message["From"] = config.SMTP_FROM
+    message["From"] = config.EMAIL_FROM
     message["To"] = email
     message.set_content(
         f"Hola,\n\n"
@@ -87,9 +95,18 @@ def _send_password_reset_email(email: str, code: str) -> None:
     _deliver_security_email(message)
 
 
+def _validate_email_settings() -> None:
+    try:
+        mail_delivery.validate_settings()
+    except ValueError as error:
+        raise ApiError(503, str(error)) from error
+
+
 def _deliver_security_email(message: EmailMessage) -> None:
-    if not config.SMTP_HOST or not config.SMTP_FROM or bool(config.SMTP_USERNAME) != bool(config.SMTP_PASSWORD):
-        raise ApiError(503, "El correo del hotel no está disponible en este momento.")
+    _validate_email_settings()
+    if config.EMAIL_PROVIDER == "brevo":
+        mail_delivery.send_https(message)
+        return
     if config.SMTP_PORT == 465:
         server_connection = smtplib.SMTP_SSL(
             config.SMTP_HOST,
@@ -149,7 +166,7 @@ def _registration_code_digest(identifier, email, code) -> bytes:
 def _send_registration_email(email: str, code: str) -> None:
     message = EmailMessage()
     message["Subject"] = f"Confirma tu correo · {config.HOTEL_NAME}"
-    message["From"] = config.SMTP_FROM
+    message["From"] = config.EMAIL_FROM
     message["To"] = email
     message.set_content(
         f"Hola,\n\nTu código para crear tu cuenta en {config.HOTEL_NAME} es:\n\n{code}\n\n"
@@ -251,7 +268,7 @@ def _room_payload(room: Room, request_host: str) -> dict:
     }
     photos = [
         {
-            "url": f"http://{request_host}/api/room-photos/{photo.id}",
+            "url": f"{request_host if request_host.startswith(('https://', 'http://')) else 'http://' + request_host}/api/room-photos/{photo.id}",
             "label": photo.caption or f"Vista {index + 1}",
         }
         for index, photo in enumerate(room.photos)
@@ -451,7 +468,7 @@ class HotelApiHandler(BaseHTTPRequestHandler):
         return token
 
     def _host(self) -> str:
-        return f"{API_HOST}:{API_PORT}"
+        return PUBLIC_BASE_URL or f"{API_HOST}:{API_PORT}"
 
     def do_OPTIONS(self) -> None:
         self.send_response(204)
@@ -495,14 +512,15 @@ class HotelApiHandler(BaseHTTPRequestHandler):
                     raise ApiError(404, "La fotografía no existe.") from error
                 with SessionLocal() as session:
                     photo = session.get(RoomPhoto, photo_id)
-                    photo_path = Path(photo.path).resolve() if photo else None
-                photo_root = config.PHOTO_DIR.resolve()
-                if photo_path is None or photo_root not in photo_path.parents or not photo_path.is_file():
-                    raise ApiError(404, "La fotografía no existe.")
-                content = photo_path.read_bytes()
+                    if photo is None:
+                        raise ApiError(404, "La fotografía no existe.")
+                    try:
+                        content, mime_type = read_photo(photo)
+                    except (FileNotFoundError, ValueError) as error:
+                        raise ApiError(404, "La fotografía no existe.") from error
                 self.send_response(200)
                 self._cors()
-                self.send_header("Content-Type", mimetypes.guess_type(photo_path.name)[0] or "application/octet-stream")
+                self.send_header("Content-Type", mime_type)
                 self.send_header("Content-Length", str(len(content)))
                 self.send_header("Cache-Control", "public, max-age=300")
                 self.end_headers()
@@ -592,10 +610,7 @@ class HotelApiHandler(BaseHTTPRequestHandler):
                 email = str(data.get("email", "")).strip().casefold()
                 if not email or len(email) > 160 or not _EMAIL_PATTERN.fullmatch(email):
                     raise ApiError(400, "Escribe un correo electrónico válido.")
-                if not config.SMTP_HOST or not config.SMTP_FROM:
-                    raise ApiError(503, "El correo de recuperación aún no está configurado. Contacta al administrador.")
-                if bool(config.SMTP_USERNAME) != bool(config.SMTP_PASSWORD):
-                    raise ApiError(503, "La configuración del correo de recuperación está incompleta.")
+                _validate_email_settings()
 
                 _check_password_reset_rate_limit(email, self.client_address[0])
                 with SessionLocal() as session:

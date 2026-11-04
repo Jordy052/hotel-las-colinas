@@ -1,9 +1,10 @@
 (function () {
-  const baseUrl = "http://127.0.0.1:8765/api";
+  const baseUrl = window.HotelRuntime.apiBaseUrl;
   const tokenKey = "hotel-session-token";
   const userKey = "hotel-demo-user";
 
   async function request(path, options) {
+    if (!baseUrl) throw new Error("El servicio del hotel aún no está publicado. Intenta nuevamente más tarde.");
     const settings = options || {};
     const headers = new Headers(settings.headers || {});
     headers.set("Accept", "application/json");
@@ -197,8 +198,8 @@ async function reserveRoom(room) {
   sessionStorage.setItem("hotel-demo-pending-reservation", JSON.stringify(pending));
 
   if (!HotelApi.getToken()) {
-    sessionStorage.setItem("hotel-return-to", "pago.html");
-    window.location.href = "acceso.html";
+    if (roomDialog.open) roomDialog.close();
+    HotelGuest.promptReservation();
     return;
   }
   window.roomCheckoutOpening = true;

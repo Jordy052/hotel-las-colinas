@@ -1,9 +1,10 @@
 (function () {
-  const baseUrl = "http://127.0.0.1:8765/api";
+  const baseUrl = window.HotelRuntime.apiBaseUrl;
   const tokenKey = "hotel-session-token";
   const userKey = "hotel-demo-user";
 
   async function request(path, options) {
+    if (!baseUrl) throw new Error("El servicio del hotel aún no está publicado. Intenta nuevamente más tarde.");
     const settings = options || {};
     const headers = new Headers(settings.headers || {});
     headers.set("Accept", "application/json");
@@ -210,7 +211,10 @@ function handleRegistrationResult(result) {
   passwordInput.value = "";
   confirmationInput.value = "";
   registrationData = null;
-  window.location.href = "habitaciones.html";
+  const returnTo = sessionStorage.getItem("hotel-return-to");
+  sessionStorage.removeItem("hotel-return-to");
+  window.location.href = /^[a-z0-9-]+\.html$/i.test(returnTo || "")
+    ? returnTo : "habitaciones.html";
 }
 function updateResendButton() {
   const seconds = Math.max(0, Math.ceil((verificationRetryAt - Date.now()) / 1000));

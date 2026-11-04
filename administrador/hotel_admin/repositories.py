@@ -10,6 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, selectinload
 
 from hotel_admin import config, checkout, billing
+from hotel_admin.photos import local_photo_path, store_photo
 from hotel_admin.config import PHOTO_DIR
 from hotel_admin.database import SessionLocal
 from hotel_admin.security import MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, hash_password
@@ -50,7 +51,7 @@ def _room_dict(room: Room) -> dict[str, Any]:
         "description": room.description or "",
         "amenities": list(room.amenities or []),
         "photos": [
-            {"path": photo.path, "caption": photo.caption, "position": photo.position}
+            {"path": local_photo_path(photo), "caption": photo.caption, "position": photo.position}
             for photo in room.photos
         ],
     }
@@ -352,7 +353,7 @@ class HotelRepository:
                 session.flush()
                 if data.get("replace_photos"):
                     room.photos.clear()
-                existing = {photo.path for photo in room.photos}
+                existing = {local_photo_path(photo) for photo in room.photos}
                 for position, photo in enumerate(data.get("photos", [])):
                     source = Path(photo)
                     if not source.is_file() or str(source) in existing:
@@ -362,7 +363,9 @@ class HotelRepository:
                     else:
                         destination = PHOTO_DIR / f"{room.number}-{uuid4().hex[:10]}{source.suffix.lower()}"
                         shutil.copy2(source, destination)
-                    room.photos.append(RoomPhoto(path=str(destination), caption=source.stem, position=position))
+                    stored_photo = RoomPhoto(path=str(destination), caption=source.stem, position=position)
+                    store_photo(stored_photo, destination)
+                    room.photos.append(stored_photo)
                 session.commit()
                 return room.id
             except SQLAlchemyError:

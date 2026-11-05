@@ -883,10 +883,8 @@ class LoginDialog(QDialog):
             available = screen.availableGeometry()
             self.move(available.center() - self.rect().center())
         self._fit_login_card()
-        self.card.email.setEnabled(False)
-        self.card.password.setEnabled(False)
         self.card.submit_button.setEnabled(False)
-        self.card.error_label.setText("Preparando el acceso…")
+        self.card.error_label.setText("")
         QTimer.singleShot(0, self._connect_mysql_async)
 
     def _track_login_worker(self, worker: TaskThread) -> None:
@@ -921,7 +919,6 @@ class LoginDialog(QDialog):
             self.card.error_label.setText("Escribe tu correo y contraseña para continuar.")
             return
         self.card.submit_button.setEnabled(False)
-        self.card.submit_button.setText("Verificando acceso…")
         self.card.error_label.setText("")
         self._login_password = password
         worker = TaskThread(lambda token: AuthService.authenticate(email, password), self)
@@ -1340,8 +1337,8 @@ class RoomPhoto(QLabel):
     def __init__(self, pixmap: QPixmap | None = None, parent=None) -> None:
         super().__init__(parent)
         self._pixmap = pixmap or QPixmap()
-        self.setMinimumHeight(110)
-        self.setMaximumHeight(132)
+        self.setMinimumHeight(190)
+        self.setMaximumHeight(340)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
 
     def paintEvent(self, _event) -> None:
@@ -1351,9 +1348,10 @@ class RoomPhoto(QLabel):
         if not self._pixmap.isNull():
             scaled = self._pixmap.scaled(
                 rect.size(),
-                Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation,
             )
+            painter.fillRect(rect, QColor("#edf3f3"))
             x = (rect.width() - scaled.width()) // 2
             y = (rect.height() - scaled.height()) // 2
             painter.drawPixmap(x, y, scaled)

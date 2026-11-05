@@ -1,5 +1,5 @@
 import ssl
-from sqlalchemy import URL, create_engine, func, inspect, select, text
+from sqlalchemy import URL, create_engine, func, select, text
 from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -60,11 +60,12 @@ def initialize_database() -> None:
         connect_args=_connection_options(),
     )
     try:
-        with candidate.connect() as connection:
-            connection.execute(text("SELECT 1"))
-        BookingHold.__table__.create(candidate, checkfirst=True)
-        RoomPhotoAsset.__table__.create(candidate, checkfirst=True)
-        _validate_existing_schema(candidate)
+        columns = _schema_columns(candidate)
+        for table in (BookingHold.__table__, RoomPhotoAsset.__table__):
+            if table.name not in columns:
+                table.create(candidate, checkfirst=False)
+                columns[table.name] = set(table.columns.keys())
+        _validate_existing_schema(candidate, columns)
         _ensure_initial_admin(candidate)
     except Exception:
         candidate.dispose()
@@ -77,9 +78,22 @@ def initialize_database() -> None:
         print(f"Simulación: {result['converted']} reservas anteriores convertidas; {result['refunded']} reembolsos completos reconstruidos.")
 
 
-def _validate_existing_schema(database_engine: Engine) -> None:
-    inspector = inspect(database_engine)
-    existing_tables = set(inspector.get_table_names())
+def _schema_columns(database_engine: Engine) -> dict[str, set[str]]:
+    # One metadata round trip instead of SHOW CREATE TABLE for every model.
+    with database_engine.connect() as connection:
+        rows = connection.execute(text(
+            "SELECT TABLE_NAME, COLUMN_NAME FROM information_schema.COLUMNS "
+            "WHERE TABLE_SCHEMA = DATABASE()"
+        ))
+        columns: dict[str, set[str]] = {}
+        for table, column in rows:
+            columns.setdefault(table, set()).add(column)
+        return columns
+
+
+def _validate_existing_schema(database_engine: Engine, columns: dict[str, set[str]] | None = None) -> None:
+    columns = columns if columns is not None else _schema_columns(database_engine)
+    existing_tables = set(columns)
     required_tables = set(Base.metadata.tables)
     missing_tables = sorted(required_tables - existing_tables)
     if missing_tables:
@@ -91,9 +105,7 @@ def _validate_existing_schema(database_engine: Engine) -> None:
 
     missing_columns: list[str] = []
     for table_name, model_table in Base.metadata.tables.items():
-        actual_columns = {
-            column["name"] for column in inspector.get_columns(table_name)
-        }
+        actual_columns = columns[table_name]
         absent = sorted(set(model_table.columns.keys()) - actual_columns)
         if absent:
             missing_columns.append(f"{table_name}: {', '.join(absent)}")
@@ -104,11 +116,14 @@ def _validate_existing_schema(database_engine: Engine) -> None:
             "Revisa sql/01_crear_esquema.sql en MySQL Workbench."
         )
 
-    with Session(database_engine) as session:
-        roles = set(session.scalars(select(Role.name)).all())
-        missing_roles = sorted(set(REQUIRED_ROLE_NAMES) - roles)
-        permissions = set(session.scalars(select(Permission.code)).all())
-        missing_permissions = sorted(set(RECEPTION_PERMISSION_CODES) - permissions)
+    with database_engine.connect() as connection:
+        rows = connection.execute(text(
+            "SELECT 'role', name FROM roles UNION ALL SELECT 'permission', code FROM permissions"
+        )).all()
+    roles = {value for kind, value in rows if kind == "role"}
+    permissions = {value for kind, value in rows if kind == "permission"}
+    missing_roles = sorted(set(REQUIRED_ROLE_NAMES) - roles)
+    missing_permissions = sorted(set(RECEPTION_PERMISSION_CODES) - permissions)
     if missing_roles or missing_permissions:
         details = []
         if missing_roles:

@@ -30,7 +30,7 @@ from hotel_admin.photos import read_photo
 from hotel_admin import mail_delivery
 from hotel_admin.auth import AuthService
 from hotel_admin.database import SessionLocal, initialize_database
-from hotel_admin.models import AppUser, Guest, Payment, Reservation, Role, Room, RoomPhoto
+from hotel_admin.models import AppUser, Guest, Payment, Reservation, Role, Room, RoomPhoto, RoomPhotoAsset
 from hotel_admin.security import MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, hash_password, verify_password
 
 
@@ -268,7 +268,7 @@ def _room_payload(room: Room, request_host: str) -> dict:
     }
     photos = [
         {
-            "url": f"{request_host if request_host.startswith(('https://', 'http://')) else 'http://' + request_host}/api/room-photos/{photo.id}",
+            "url": f"{request_host if request_host.startswith(('https://', 'http://')) else 'http://' + request_host}/api/room-photos/{photo.id}" + (f"?v={photo.asset.sha256[:12]}" if photo.asset else ""),
             "label": photo.caption or f"Vista {index + 1}",
         }
         for index, photo in enumerate(room.photos)
@@ -330,7 +330,7 @@ def _available_rooms(session, request_host: str, arrival: date | None,
                      departure: date | None, guests: int) -> list[dict]:
     query = (
         select(Room)
-        .options(selectinload(Room.photos))
+        .options(selectinload(Room.photos).joinedload(RoomPhoto.asset))
         .where(Room.active.is_(True), Room.status.not_in(["Mantenimiento", "Inactiva"]))
     )
     rooms = session.scalars(query.order_by(Room.nightly_rate, Room.number)).unique().all()
@@ -511,18 +511,30 @@ class HotelApiHandler(BaseHTTPRequestHandler):
                 except (ValueError, IndexError) as error:
                     raise ApiError(404, "La fotografía no existe.") from error
                 with SessionLocal() as session:
-                    photo = session.get(RoomPhoto, photo_id)
+                    photo = session.scalar(select(RoomPhoto).options(joinedload(RoomPhoto.asset).undefer(RoomPhotoAsset.content)).where(RoomPhoto.id == photo_id))
                     if photo is None:
                         raise ApiError(404, "La fotografía no existe.")
                     try:
                         content, mime_type = read_photo(photo)
+                        digest = photo.asset.sha256 if photo.asset else hashlib.sha256(content).hexdigest()
                     except (FileNotFoundError, ValueError) as error:
                         raise ApiError(404, "La fotografía no existe.") from error
+                etag = '"' + digest + '"'
+                versioned = params.get("v", [""])[0] == digest[:12]
+                cache_control = "public, max-age=31536000, immutable" if versioned else "public, max-age=300"
+                if self.headers.get("If-None-Match") == etag:
+                    self.send_response(304)
+                    self._cors()
+                    self.send_header("ETag", etag)
+                    self.send_header("Cache-Control", cache_control)
+                    self.end_headers()
+                    return
                 self.send_response(200)
                 self._cors()
+                self.send_header("ETag", etag)
                 self.send_header("Content-Type", mime_type)
                 self.send_header("Content-Length", str(len(content)))
-                self.send_header("Cache-Control", "public, max-age=300")
+                self.send_header("Cache-Control", cache_control)
                 self.end_headers()
                 self.wfile.write(content)
                 return
@@ -550,7 +562,7 @@ class HotelApiHandler(BaseHTTPRequestHandler):
                     rows = session.scalars(
                         select(Reservation).join(Reservation.guest).options(
                             joinedload(Reservation.guest),
-                            joinedload(Reservation.room).selectinload(Room.photos),
+                            joinedload(Reservation.room).selectinload(Room.photos).joinedload(RoomPhoto.asset),
                             selectinload(Reservation.payments),
                         ).where(func.lower(Guest.email) == user.email.casefold())
                         .order_by(Reservation.created_at.desc())
@@ -580,7 +592,7 @@ class HotelApiHandler(BaseHTTPRequestHandler):
                     row = session.scalar(
                         select(Reservation).join(Reservation.guest).options(
                             joinedload(Reservation.guest),
-                            joinedload(Reservation.room).selectinload(Room.photos),
+                            joinedload(Reservation.room).selectinload(Room.photos).joinedload(RoomPhoto.asset),
                             selectinload(Reservation.payments),
                         ).where(
                             Reservation.code == code,
@@ -860,7 +872,7 @@ class HotelApiHandler(BaseHTTPRequestHandler):
 
                 with SessionLocal() as session:
                     room = session.scalar(
-                        select(Room).options(selectinload(Room.photos))
+                        select(Room).options(selectinload(Room.photos).joinedload(RoomPhoto.asset))
                         .where(Room.id == room_id).with_for_update()
                     )
                     if room is None:
@@ -928,7 +940,7 @@ class HotelApiHandler(BaseHTTPRequestHandler):
                     row = session.scalar(
                         select(Reservation).options(
                             joinedload(Reservation.guest),
-                            joinedload(Reservation.room).selectinload(Room.photos),
+                            joinedload(Reservation.room).selectinload(Room.photos).joinedload(RoomPhoto.asset),
                             selectinload(Reservation.payments),
                         ).where(Reservation.id == reservation_id)
                     )

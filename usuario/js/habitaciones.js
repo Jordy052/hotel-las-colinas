@@ -324,13 +324,13 @@ function renderRooms() {
     return;
   }
 
-  roomGrid.innerHTML = visible.map(function (room) {
+  roomGrid.innerHTML = visible.map(function (room, index) {
     const amenities = (room.amenities || []).length
       ? room.amenities.map(escapeHtml).join(" · ")
       : "Comodidades por confirmar";
     return (
       '<article class="room-card">' +
-        '<img src="' + escapeHtml(room.image) + '" alt="' +
+        '<img loading="' + (index < 3 ? 'eager' : 'lazy') + '" decoding="async" src="' + escapeHtml(room.image) + '" alt="' +
           escapeHtml(room.name) + '">' +
         '<div class="room-content">' +
           '<p class="available">' + (room.availableToBook === false ? 'PENDIENTE DE PAGO' : 'DISPONIBLE') + '</p>' +

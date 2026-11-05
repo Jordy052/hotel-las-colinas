@@ -10,7 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, selectinload
 
 from hotel_admin import config, checkout, billing
-from hotel_admin.photos import local_photo_path, store_photo
+from hotel_admin.photos import local_photo_path, store_photo, prime_photo_cache
 from hotel_admin.config import PHOTO_DIR
 from hotel_admin.database import SessionLocal
 from hotel_admin.security import MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, hash_password
@@ -330,12 +330,14 @@ class HotelRepository:
     @staticmethod
     def rooms(search: str = "", status: str = "Todos") -> list[dict[str, Any]]:
         with SessionLocal() as session:
-            query = select(Room).options(selectinload(Room.photos)).where(Room.active.is_(True))
+            query = select(Room).options(selectinload(Room.photos).joinedload(RoomPhoto.asset)).where(Room.active.is_(True))
             if search:
                 query = query.where((Room.number.ilike(f"%{search}%")) | (Room.category.ilike(f"%{search}%")))
             if status != "Todos":
                 query = query.where(Room.status == status)
-            return [_room_dict(x) for x in session.scalars(query.order_by(cast(Room.number, BigInteger), Room.number, Room.id).execution_options(populate_existing=True)).all()]
+            rooms = session.scalars(query.order_by(cast(Room.number, BigInteger), Room.number, Room.id).execution_options(populate_existing=True)).all()
+            prime_photo_cache(session, [photo for room in rooms for photo in room.photos])
+            return [_room_dict(room) for room in rooms]
 
     @staticmethod
     def save_room(data: dict[str, Any]) -> int:

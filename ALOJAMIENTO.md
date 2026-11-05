@@ -32,3 +32,11 @@ Aiven Free tiene límites de almacenamiento y conexiones y puede apagarse por in
 Referencias: https://render.com/docs/free · https://aiven.io/docs/products/mysql/concepts/mysql-free-tier · https://developers.brevo.com/docs/send-a-transactional-email
 
 El proyecto público de Apps Script está en administrador/apps_script/. Es una plantilla sin claves. El archivo preparado con la clave privada se guarda en administrador/storage/deployment/ y está excluido de GitHub. Las cuentas Gmail personales tienen una cuota de 100 destinatarios diarios.
+
+## Optimización de carga
+
+El arranque del escritorio consulta los metadatos del esquema en conjunto, manteniendo las validaciones de tablas, columnas, roles y permisos. La medición en la misma computadora pasó de 21,3 s (20 consultas) a 4,0 s (5 consultas). La autenticación carga rol y permisos en una consulta.
+
+Las 22 imágenes se optimizaron a WebP: 52,97 MB → 4,41 MB. Los originales se respaldaron de forma privada antes de convertir las copias de la base remota. Las cargas futuras se optimizan automáticamente y las fotos ya optimizadas no se recomprimen al editar. El navegador recibe URLs con versión, ETag y caché; las imágenes fuera de la vista se cargan al acercarse a ellas. Las tarjetas y la galería muestran el encuadre completo.
+
+El tiempo de arranque de una instancia dormida de Render Free depende del proveedor y es independiente de estas mediciones del escritorio. Reiniciar el escritorio y recargar la web para usar los ajustes nuevos.

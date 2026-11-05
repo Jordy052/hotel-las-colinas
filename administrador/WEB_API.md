@@ -4,12 +4,12 @@ La web de huéspedes usa la misma base MySQL que Administración y Recepción. E
 
 ## Inicio
 
-1. Inicia el servidor MySQL configurado en `administrador/.env`.
+1. Asegúrate de que MySQL en Aiven esté activo y que `administrador/.env` tenga los datos de esa instancia.
 2. Ejecuta `INICIAR_API.cmd` desde la carpeta `administrador` y deja esa ventana abierta.
 3. Abre `usuario/html/acceso.html` con Live Server en el puerto 5500.
 4. Registra una cuenta desde la web o inicia sesión con una cuenta de rol `Usuario` ya existente.
 
-Las cuentas de `Administrador` y `Recepcionista` se rechazan en el portal de huéspedes. Las reservas web se guardan en `reservations` con origen `Web`, y el pago simulado completo se registra en `payments`. Cada apartado conserva una clave que impide crear pagos duplicados. Administración y Recepción leen esos mismos registros desde MySQL.
+Las cuentas de `Administrador` y `Recepcionista` se rechazan en el portal de huéspedes. Las reservas web se guardan en `reservas` con origen `Web`, y el pago se registra en `pagos`. Cada apartado conserva una clave que impide crear pagos duplicados. Administración y Recepción leen esos mismos registros desde MySQL.
 
 ## Restablecer contraseña por correo
 

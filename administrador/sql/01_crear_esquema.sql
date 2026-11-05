@@ -1,194 +1,192 @@
--- Esquema único para los roles Usuario, Administrador y Recepcionista.
--- Compatible con MySQL 8. Ejecutar desde MySQL Workbench.
+-- Esquema único de Hotel Las Colinas para Aiven defaultdb.
+-- Compatible con MySQL 8. Ejecutar sobre defaultdb desde MySQL Workbench.
 -- No elimina ni reemplaza datos existentes.
 -- Las contraseñas se guardan como hash desde la aplicación.
 
-CREATE DATABASE IF NOT EXISTS hotel_reservas
-  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE hotel_reservas;
+USE defaultdb;
 
 CREATE TABLE IF NOT EXISTS roles (
   id INT NOT NULL AUTO_INCREMENT,
-  name VARCHAR(40) NOT NULL,
+  nombre VARCHAR(40) NOT NULL,
   PRIMARY KEY (id),
-  UNIQUE KEY uq_roles_name (name)
+  UNIQUE KEY uq_roles_nombre (nombre)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS permissions (
+CREATE TABLE IF NOT EXISTS permisos (
   id INT NOT NULL AUTO_INCREMENT,
-  code VARCHAR(40) NOT NULL,
-  label VARCHAR(60) NOT NULL,
+  codigo VARCHAR(40) NOT NULL,
+  etiqueta VARCHAR(60) NOT NULL,
   PRIMARY KEY (id),
-  UNIQUE KEY uq_permissions_code (code),
-  UNIQUE KEY uq_permissions_label (label)
+  UNIQUE KEY uq_permisos_codigo (codigo),
+  UNIQUE KEY uq_permisos_etiqueta (etiqueta)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Una sola tabla de cuentas para los tres roles.
-CREATE TABLE IF NOT EXISTS app_users (
+CREATE TABLE IF NOT EXISTS usuarios_app (
   id INT NOT NULL AUTO_INCREMENT,
-  username VARCHAR(30) NOT NULL,
-  email VARCHAR(160) NOT NULL,
+  nombre_usuario VARCHAR(30) NOT NULL,
+  correo VARCHAR(160) NOT NULL,
   cedula VARCHAR(16) DEFAULT NULL, -- requerida para las nuevas cuentas de recepción
-  password_hash VARCHAR(255) NOT NULL, -- hash seguro; la contraseña original admite 12–30 caracteres en la aplicación
-  phone VARCHAR(30) DEFAULT NULL,
-  active TINYINT NOT NULL DEFAULT 1,
-  role_id INT NOT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  hash_contrasena VARCHAR(255) NOT NULL, -- hash seguro; la contraseña original admite 12–30 caracteres en la aplicación
+  telefono VARCHAR(30) DEFAULT NULL,
+  activo TINYINT NOT NULL DEFAULT 1,
+  rol_id INT NOT NULL,
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY uq_app_users_username (username),
-  UNIQUE KEY uq_app_users_email (email),
-  UNIQUE KEY uq_app_users_cedula (cedula),
-  KEY ix_app_users_active (active),
-  KEY ix_app_users_role_id (role_id),
-  CONSTRAINT ck_app_users_username_length
+  UNIQUE KEY uq_usuarios_app_nombre_usuario (nombre_usuario),
+  UNIQUE KEY uq_usuarios_app_correo (correo),
+  UNIQUE KEY uq_usuarios_app_cedula (cedula),
+  KEY ix_usuarios_app_activo (activo),
+  KEY ix_usuarios_app_rol_id (rol_id),
+  CONSTRAINT ck_usuarios_app_nombre_usuario_longitud
     CHECK (
-      CHAR_LENGTH(TRIM(username)) BETWEEN 5 AND 30
-      AND CHAR_LENGTH(username) = CHAR_LENGTH(TRIM(username))
+      CHAR_LENGTH(TRIM(nombre_usuario)) BETWEEN 5 AND 30
+      AND CHAR_LENGTH(nombre_usuario) = CHAR_LENGTH(TRIM(nombre_usuario))
     ),
-  CONSTRAINT fk_app_users_role
-    FOREIGN KEY (role_id) REFERENCES roles (id)
+  CONSTRAINT fk_usuarios_app_roles
+    FOREIGN KEY (rol_id) REFERENCES roles (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS guests (
+CREATE TABLE IF NOT EXISTS huespedes (
   id INT NOT NULL AUTO_INCREMENT,
-  username VARCHAR(80) NOT NULL,
-  email VARCHAR(160) NOT NULL,
-  phone VARCHAR(30) DEFAULT NULL,
-  document_number VARCHAR(40) DEFAULT NULL,
-  active TINYINT NOT NULL DEFAULT 1,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  nombre VARCHAR(80) NOT NULL,
+  correo VARCHAR(160) NOT NULL,
+  telefono VARCHAR(30) DEFAULT NULL,
+  numero_documento VARCHAR(40) DEFAULT NULL,
+  activo TINYINT NOT NULL DEFAULT 1,
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY uq_guests_email (email),
-  KEY ix_guests_username (username)
+  UNIQUE KEY uq_huespedes_correo (correo),
+  KEY ix_huespedes_nombre (nombre)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS rooms (
+CREATE TABLE IF NOT EXISTS habitaciones (
   id INT NOT NULL AUTO_INCREMENT,
-  number VARCHAR(12) NOT NULL,
-  category VARCHAR(40) NOT NULL,
-  nightly_rate DECIMAL(10,2) NOT NULL,
-  capacity INT NOT NULL DEFAULT 2,
-  bed_count INT NOT NULL DEFAULT 1,
-  bed_type VARCHAR(40) NOT NULL DEFAULT 'Queen',
-  status VARCHAR(24) NOT NULL DEFAULT 'Disponible',
-  description TEXT DEFAULT NULL,
-  amenities JSON NOT NULL,
-  active TINYINT NOT NULL DEFAULT 1,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  numero VARCHAR(12) NOT NULL,
+  categoria VARCHAR(40) NOT NULL,
+  precio_noche DECIMAL(10,2) NOT NULL,
+  capacidad INT NOT NULL DEFAULT 2,
+  cantidad_camas INT NOT NULL DEFAULT 1,
+  tipo_cama VARCHAR(40) NOT NULL DEFAULT 'Queen',
+  estado VARCHAR(24) NOT NULL DEFAULT 'Disponible',
+  descripcion TEXT DEFAULT NULL,
+  comodidades JSON NOT NULL,
+  activo TINYINT NOT NULL DEFAULT 1,
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY uq_rooms_number (number),
-  KEY ix_rooms_category (category),
-  KEY ix_rooms_status (status)
+  UNIQUE KEY uq_habitaciones_numero (numero),
+  KEY ix_habitaciones_categoria (categoria),
+  KEY ix_habitaciones_estado (estado)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS reservations (
+CREATE TABLE IF NOT EXISTS reservas (
   id INT NOT NULL AUTO_INCREMENT,
-  code VARCHAR(24) NOT NULL,
-  guest_id INT NOT NULL,
-  room_id INT NOT NULL,
-  check_in DATE NOT NULL,
-  check_out DATE NOT NULL,
-  guest_count INT NOT NULL DEFAULT 1,
-  total_amount DECIMAL(10,2) NOT NULL,
-  status VARCHAR(24) NOT NULL DEFAULT 'Confirmada',
-  payment_status VARCHAR(24) NOT NULL DEFAULT 'Pagado',
-  source VARCHAR(24) NOT NULL DEFAULT 'Administración',
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  codigo VARCHAR(24) NOT NULL,
+  huesped_id INT NOT NULL,
+  habitacion_id INT NOT NULL,
+  fecha_entrada DATE NOT NULL,
+  fecha_salida DATE NOT NULL,
+  cantidad_huespedes INT NOT NULL DEFAULT 1,
+  importe_total DECIMAL(10,2) NOT NULL,
+  estado VARCHAR(24) NOT NULL DEFAULT 'Confirmada',
+  estado_pago VARCHAR(24) NOT NULL DEFAULT 'Pagado',
+  origen VARCHAR(24) NOT NULL DEFAULT 'Administración',
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY uq_reservations_code (code),
-  KEY ix_reservations_status (status),
-  KEY ix_reservations_guest_id (guest_id),
-  KEY ix_reservations_room_id (room_id),
-  CONSTRAINT fk_reservations_guest
-    FOREIGN KEY (guest_id) REFERENCES guests (id),
-  CONSTRAINT fk_reservations_room
-    FOREIGN KEY (room_id) REFERENCES rooms (id)
+  UNIQUE KEY uq_reservas_codigo (codigo),
+  KEY ix_reservas_estado (estado),
+  KEY ix_reservas_huesped_id (huesped_id),
+  KEY ix_reservas_habitacion_id (habitacion_id),
+  CONSTRAINT fk_reservas_huespedes
+    FOREIGN KEY (huesped_id) REFERENCES huespedes (id),
+  CONSTRAINT fk_reservas_habitaciones
+    FOREIGN KEY (habitacion_id) REFERENCES habitaciones (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS payments (
+CREATE TABLE IF NOT EXISTS pagos (
   id INT NOT NULL AUTO_INCREMENT,
-  reservation_id INT NOT NULL,
-  amount DECIMAL(10,2) NOT NULL,
-  method VARCHAR(32) NOT NULL,
-  status VARCHAR(24) NOT NULL DEFAULT 'Pagado',
-  reference VARCHAR(80) DEFAULT NULL,
-  paid_at DATETIME DEFAULT NULL,
+  reserva_id INT NOT NULL,
+  importe DECIMAL(10,2) NOT NULL,
+  metodo VARCHAR(32) NOT NULL,
+  estado VARCHAR(24) NOT NULL DEFAULT 'Pagado',
+  referencia VARCHAR(80) DEFAULT NULL,
+  pagado_en DATETIME DEFAULT NULL,
   PRIMARY KEY (id),
-  KEY ix_payments_reservation_id (reservation_id),
-  CONSTRAINT fk_payments_reservation
-    FOREIGN KEY (reservation_id) REFERENCES reservations (id) ON DELETE CASCADE
+  KEY ix_pagos_reserva_id (reserva_id),
+  CONSTRAINT fk_pagos_reservas
+    FOREIGN KEY (reserva_id) REFERENCES reservas (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS room_photos (
+CREATE TABLE IF NOT EXISTS fotos_habitacion (
   id INT NOT NULL AUTO_INCREMENT,
-  room_id INT NOT NULL,
-  path VARCHAR(500) NOT NULL,
-  caption VARCHAR(120) NOT NULL DEFAULT '',
-  position INT NOT NULL DEFAULT 0,
+  habitacion_id INT NOT NULL,
+  ruta VARCHAR(500) NOT NULL,
+  leyenda VARCHAR(120) NOT NULL DEFAULT '',
+  posicion INT NOT NULL DEFAULT 0,
   PRIMARY KEY (id),
-  KEY ix_room_photos_room_id (room_id),
-  CONSTRAINT fk_room_photos_room
-    FOREIGN KEY (room_id) REFERENCES rooms (id) ON DELETE CASCADE
+  KEY ix_fotos_habitacion_id (habitacion_id),
+  CONSTRAINT fk_fotos_habitacion_habitaciones
+    FOREIGN KEY (habitacion_id) REFERENCES habitaciones (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS user_permissions (
-  user_id INT NOT NULL,
-  permission_id INT NOT NULL,
-  PRIMARY KEY (user_id, permission_id),
-  KEY ix_user_permissions_permission_id (permission_id),
-  CONSTRAINT fk_user_permissions_user
-    FOREIGN KEY (user_id) REFERENCES app_users (id) ON DELETE CASCADE,
-  CONSTRAINT fk_user_permissions_permission
-    FOREIGN KEY (permission_id) REFERENCES permissions (id) ON DELETE CASCADE
+CREATE TABLE IF NOT EXISTS usuarios_permisos (
+  usuario_id INT NOT NULL,
+  permiso_id INT NOT NULL,
+  PRIMARY KEY (usuario_id, permiso_id),
+  KEY ix_usuarios_permisos_permiso_id (permiso_id),
+  CONSTRAINT fk_usuarios_permisos_usuarios_app
+    FOREIGN KEY (usuario_id) REFERENCES usuarios_app (id) ON DELETE CASCADE,
+  CONSTRAINT fk_usuarios_permisos_permisos
+    FOREIGN KEY (permiso_id) REFERENCES permisos (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Catálogo inicial de roles y permisos; las cuentas se crean desde la aplicación.
-INSERT INTO roles (name) VALUES
+INSERT INTO roles (nombre) VALUES
   ('Usuario'),
   ('Administrador'),
   ('Recepcionista')
 AS incoming_roles
-ON DUPLICATE KEY UPDATE name = incoming_roles.name;
+ON DUPLICATE KEY UPDATE nombre = incoming_roles.nombre;
 
-INSERT INTO permissions (code, label) VALUES
-  ('reservations', 'Reservas'),
-  ('rooms', 'Habitaciones'),
-  ('guests', 'Huéspedes'),
-  ('payments', 'Pagos')
+INSERT INTO permisos (codigo, etiqueta) VALUES
+  ('reservas', 'Reservas'),
+  ('habitaciones', 'Habitaciones'),
+  ('huespedes', 'Huéspedes'),
+  ('pagos', 'Pagos')
 AS incoming_permissions
-ON DUPLICATE KEY UPDATE label = incoming_permissions.label;
+ON DUPLICATE KEY UPDATE etiqueta = incoming_permissions.etiqueta;
 
 -- Comprobación del esquema y sus roles.
 SHOW TABLES;
-SELECT id, name FROM roles ORDER BY id;
+SELECT id, nombre FROM roles ORDER BY id;
 
 
 
 -- Apartados temporales y clave única para evitar pagos duplicados.
-CREATE TABLE IF NOT EXISTS booking_holds (
+CREATE TABLE IF NOT EXISTS bloqueos_reserva (
   token VARCHAR(64) NOT NULL PRIMARY KEY,
-  user_id INT NOT NULL,
-  room_id INT NOT NULL,
-  check_in DATE NOT NULL,
-  check_out DATE NOT NULL,
-  guest_count INT NOT NULL,
-  expires_at DATETIME NOT NULL,
-  reservation_id INT DEFAULT NULL UNIQUE,
-  INDEX ix_booking_holds_user_id (user_id),
-  INDEX ix_booking_holds_room_id (room_id),
-  INDEX ix_booking_holds_expires_at (expires_at),
-  FOREIGN KEY (user_id) REFERENCES app_users(id),
-  FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
-  FOREIGN KEY (reservation_id) REFERENCES reservations(id)
+  usuario_id INT NOT NULL,
+  habitacion_id INT NOT NULL,
+  fecha_entrada DATE NOT NULL,
+  fecha_salida DATE NOT NULL,
+  cantidad_huespedes INT NOT NULL,
+  expira_en DATETIME NOT NULL,
+  reserva_id INT DEFAULT NULL UNIQUE,
+  INDEX ix_bloqueos_reserva_usuario_id (usuario_id),
+  INDEX ix_bloqueos_reserva_habitacion_id (habitacion_id),
+  INDEX ix_bloqueos_reserva_expira_en (expira_en),
+  CONSTRAINT fk_bloqueos_reserva_usuarios_app FOREIGN KEY (usuario_id) REFERENCES usuarios_app(id),
+  CONSTRAINT fk_bloqueos_reserva_habitaciones FOREIGN KEY (habitacion_id) REFERENCES habitaciones(id) ON DELETE CASCADE,
+  CONSTRAINT fk_bloqueos_reserva_reservas FOREIGN KEY (reserva_id) REFERENCES reservas(id)
 ) ENGINE=InnoDB;
 
 -- Fotografías persistentes para compartir entre web, administración y recepción.
-CREATE TABLE IF NOT EXISTS room_photo_assets (
-  photo_id INT NOT NULL PRIMARY KEY,
-  content MEDIUMBLOB NOT NULL,
-  mime_type VARCHAR(80) NOT NULL,
-  sha256 VARCHAR(64) NOT NULL,
-  CONSTRAINT fk_room_photo_assets_photo
-    FOREIGN KEY (photo_id) REFERENCES room_photos (id) ON DELETE CASCADE
+CREATE TABLE IF NOT EXISTS archivos_foto_habitacion (
+  foto_id INT NOT NULL PRIMARY KEY,
+  contenido MEDIUMBLOB NOT NULL,
+  tipo_mime VARCHAR(80) NOT NULL,
+  resumen_sha256 VARCHAR(64) NOT NULL,
+  CONSTRAINT fk_archivos_foto_habitacion_fotos
+    FOREIGN KEY (foto_id) REFERENCES fotos_habitacion (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

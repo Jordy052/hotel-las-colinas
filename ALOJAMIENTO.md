@@ -13,9 +13,9 @@ Estado al 4 de noviembre de 2026:
 
 usuario/js/configuracion.js contiene únicamente la dirección pública de la API. Los datos de MySQL y las claves de servicios se guardan en variables privadas de Render y archivos .env excluidos de GitHub. No se deben copiar contraseñas a JavaScript ni a este documento.
 
-administrador/.env apunta a la base remota usando TLS y certificado CA verificado. Es necesario cerrar y volver a abrir las aplicaciones de administración y recepción para cargar esa configuración. La base local y su configuración anterior se conservaron como respaldo dentro de administrador/storage/backups/.
+administrador/.env apunta a la base remota usando TLS y certificado CA verificado. Es necesario cerrar y volver a abrir las aplicaciones de administración y recepción para cargar esa configuración. Los respaldos previos se conservan en `administrador/storage/backups/`; el sistema activo usa Aiven.
 
-Las fotos se guardan en room_photo_assets y se relacionan con room_photos. El escritorio mantiene una caché local para mostrarlas; la API las sirve desde MySQL. Se admiten imágenes de hasta 8 MB. El disco temporal de Render no es el almacenamiento principal.
+Las fotos se guardan en `archivos_foto_habitacion` y se relacionan con `fotos_habitacion`. El escritorio mantiene una caché local para mostrarlas; la API las sirve desde MySQL. Se admiten imágenes de hasta 8 MB. El disco temporal de Render no es el almacenamiento principal.
 
 ## Comprobaciones realizadas
 

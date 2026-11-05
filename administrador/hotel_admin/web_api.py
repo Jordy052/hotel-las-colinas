@@ -776,7 +776,7 @@ class HotelApiHandler(BaseHTTPRequestHandler):
                         session.commit()
                     except IntegrityError as error:
                         session.rollback()
-                        if "uq_app_users_username" in str(error.orig).casefold():
+                        if "uq_usuarios_app_nombre_usuario" in str(error.orig).casefold():
                             raise ApiError(409, "Ese nombre de usuario ya existe. Elige otro.") from error
                         raise ApiError(409, "Ya existe una cuenta con ese correo.") from error
                     user_id = account.id

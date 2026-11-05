@@ -20,13 +20,13 @@ PHOTO_DIR = STORAGE_DIR / "room_photos"
 PHOTO_DIR.mkdir(parents=True, exist_ok=True)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
-MYSQL_HOST = os.getenv("MYSQL_HOST", "127.0.0.1").strip()
-MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
+MYSQL_HOST = os.getenv("MYSQL_HOST", "").strip()
+MYSQL_PORT = int(os.getenv("MYSQL_PORT", "16394"))
 MYSQL_USER = os.getenv("MYSQL_USER", "").strip()
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
-MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "hotel_reservas").strip()
+MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "defaultdb").strip()
 MYSQL_CONNECT_TIMEOUT = int(os.getenv("MYSQL_CONNECT_TIMEOUT", "5"))
-MYSQL_SSL = os.getenv("MYSQL_SSL", "false").lower() in {"1", "true", "yes", "on"}
+MYSQL_SSL = os.getenv("MYSQL_SSL", "true").lower() in {"1", "true", "yes", "on"}
 MYSQL_SSL_CA = os.getenv("MYSQL_SSL_CA", "").strip()
 MYSQL_SSL_CA_PEM = os.getenv("MYSQL_SSL_CA_PEM", "").strip()
 

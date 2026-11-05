@@ -12,7 +12,7 @@ engine: Engine | None = None
 SessionLocal = sessionmaker(expire_on_commit=False)
 
 REQUIRED_ROLE_NAMES = ("Usuario", "Administrador", "Recepcionista")
-RECEPTION_PERMISSION_CODES = ("reservations", "rooms", "guests", "payments")
+RECEPTION_PERMISSION_CODES = ("reservas", "habitaciones", "huespedes", "pagos")
 
 
 def _database_url() -> URL:
@@ -24,10 +24,12 @@ def _database_url() -> URL:
     if not config.MYSQL_USER:
         raise RuntimeError(
             "Falta configurar MYSQL_USER en el archivo .env. "
-            "Configura los datos del servidor MySQL y vuelve a iniciar la aplicación."
+            "Configura las credenciales de MySQL en Aiven y vuelve a iniciar la aplicación."
         )
+    if not config.MYSQL_HOST:
+        raise RuntimeError("Falta configurar MYSQL_HOST de Aiven en el archivo .env.")
     if not config.MYSQL_DATABASE:
-        raise RuntimeError("Falta configurar MYSQL_DATABASE en el archivo .env.")
+        raise RuntimeError("Falta configurar MYSQL_DATABASE de Aiven en el archivo .env.")
     return URL.create(
         "mysql+pymysql",
         username=config.MYSQL_USER,
@@ -60,11 +62,9 @@ def initialize_database() -> None:
         connect_args=_connection_options(),
     )
     try:
+        # Schema creation and translation are explicit SQL operations. Do not
+        # create partial Spanish tables alongside an existing English schema.
         columns = _schema_columns(candidate)
-        for table in (BookingHold.__table__, RoomPhotoAsset.__table__):
-            if table.name not in columns:
-                table.create(candidate, checkfirst=False)
-                columns[table.name] = set(table.columns.keys())
         _validate_existing_schema(candidate, columns)
         _ensure_initial_admin(candidate)
     except Exception:
@@ -100,13 +100,13 @@ def _validate_existing_schema(database_engine: Engine, columns: dict[str, set[st
         names = ", ".join(missing_tables)
         raise RuntimeError(
             f"Faltan tablas en MySQL: {names}. "
-            "Ejecuta sql/01_crear_esquema.sql desde MySQL Workbench."
+            "Si la base está vacía, ejecuta sql/01_crear_esquema.sql; si ya tiene tablas en inglés, ejecuta sql/04_traducir_esquema_aiven.sql."
         )
 
     missing_columns: list[str] = []
     for table_name, model_table in Base.metadata.tables.items():
         actual_columns = columns[table_name]
-        absent = sorted(set(model_table.columns.keys()) - actual_columns)
+        absent = sorted({column.name for column in model_table.columns} - actual_columns)
         if absent:
             missing_columns.append(f"{table_name}: {', '.join(absent)}")
     if missing_columns:
@@ -118,7 +118,7 @@ def _validate_existing_schema(database_engine: Engine, columns: dict[str, set[st
 
     with database_engine.connect() as connection:
         rows = connection.execute(text(
-            "SELECT 'role', name FROM roles UNION ALL SELECT 'permission', code FROM permissions"
+            "SELECT 'role', nombre FROM roles UNION ALL SELECT 'permission', codigo FROM permisos"
         )).all()
     roles = {value for kind, value in rows if kind == "role"}
     permissions = {value for kind, value in rows if kind == "permission"}

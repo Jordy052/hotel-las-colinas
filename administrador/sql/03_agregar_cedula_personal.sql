@@ -1,8 +1,8 @@
 -- Agrega la cédula del personal de recepción a una base ya existente.
--- Ejecutar en MySQL Workbench sobre hotel_reservas.
+-- Ejecutar en MySQL Workbench conectado a Aiven, sobre defaultdb.
 -- La columna permite NULL para usuarios web, administradores y cuentas previas;
 -- el formulario administrativo exige cédula para nuevas cuentas de recepción.
-USE hotel_reservas;
+USE defaultdb;
 
 DROP PROCEDURE IF EXISTS migrar_cedula_personal_app;
 DELIMITER $$
@@ -12,22 +12,22 @@ BEGIN
     SELECT 1
     FROM information_schema.columns
     WHERE table_schema = DATABASE()
-      AND table_name = 'app_users'
+      AND table_name = 'usuarios_app'
       AND column_name = 'cedula'
   ) THEN
-    ALTER TABLE app_users
-      ADD COLUMN cedula VARCHAR(16) DEFAULT NULL AFTER email;
+    ALTER TABLE usuarios_app
+      ADD COLUMN cedula VARCHAR(16) DEFAULT NULL AFTER correo;
   END IF;
 
   IF NOT EXISTS (
     SELECT 1
     FROM information_schema.statistics
     WHERE table_schema = DATABASE()
-      AND table_name = 'app_users'
-      AND index_name = 'uq_app_users_cedula'
+      AND table_name = 'usuarios_app'
+      AND index_name = 'uq_usuarios_app_cedula'
   ) THEN
-    ALTER TABLE app_users
-      ADD UNIQUE KEY uq_app_users_cedula (cedula);
+    ALTER TABLE usuarios_app
+      ADD UNIQUE KEY uq_usuarios_app_cedula (cedula);
   END IF;
 END$$
 DELIMITER ;

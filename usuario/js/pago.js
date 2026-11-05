@@ -277,10 +277,10 @@ function validateDemoCard() {
       && billingEmail.value.trim().length <= 254 ? "" : "Escribe un correo electrónico válido."],
     [billingPhone, validPhone ? "" : "Escribe un teléfono de 7 a 15 dígitos; puedes incluir el código del país."],
     [cardHolder, cardHolder.value.trim().length >= 2 ? "" : "Escribe el nombre del titular."],
-    [cardNumber, ["4242424242424242", "5200828282828210"].includes(cardNumber.value.replace(/\s/g, ""))
-      ? "" : "Utiliza el número indicado en el ejemplo: 5200 8282 8282 8210."],
+    [cardNumber, /^\d{16}$/.test(cardNumber.value.replace(/\s/g, ""))
+      ? "" : "Escribe 16 dígitos para el número de tarjeta."],
     [cardExpiry, validExpiry ? "" : "Escribe una fecha vigente con el formato MM/AA."],
-    [cardCode, cardCode.value === "123" ? "" : "Utiliza el código indicado en el ejemplo: 123."],
+    [cardCode, /^\d{3}$/.test(cardCode.value) ? "" : "Escribe un código de 3 dígitos."],
     [billingCountry, billingCountry.value.trim().length >= 2 && billingCountry.value.trim().length <= 80
       ? "" : "Escribe el país de la dirección de facturación."],
     [billingCity, billingCity.value.trim().length >= 2 && billingCity.value.trim().length <= 80
@@ -341,7 +341,7 @@ saveReservationButton.addEventListener("click", async function () {
   }
 
   if (!validateDemoCard()) {
-    paymentMessage.textContent = "Completa los datos de la tarjeta de prueba para continuar.";
+    paymentMessage.textContent = "Completa los campos con el formato indicado para continuar.";
     return;
   }
   paymentMessage.textContent = "";

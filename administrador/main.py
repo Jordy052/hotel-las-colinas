@@ -17,6 +17,7 @@ def main() -> int:
     app.setOrganizationName("Reservas de hotel")
     install_theme(app)
 
+    app.setQuitOnLastWindowClosed(False)
     login = LoginDialog()
     if login.exec() != LoginDialog.DialogCode.Accepted:
         return 0
@@ -29,6 +30,7 @@ def main() -> int:
         user_permissions=login.user_permissions,
     )
     window.showMaximized()
+    app.setQuitOnLastWindowClosed(True)
     return app.exec()
 
 

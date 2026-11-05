@@ -4,7 +4,7 @@ from pathlib import Path
 import unicodedata
 from typing import Any, Callable
 
-from PySide6.QtCore import Qt, QTimer, QDate, QTime, QEvent, QRectF, QPointF, QSettings, QObject
+from PySide6.QtCore import Qt, QTimer, QDate, QTime, QEvent, QRectF, QPointF, QSettings, QObject, Slot
 from PySide6.QtCore import QRegularExpression, QPoint, QSize
 from PySide6.QtGui import (
     QIcon, QBrush, QColor, QDoubleValidator, QFontMetrics, QIntValidator, QLinearGradient, QPalette,
@@ -810,6 +810,9 @@ class LoginDialog(QDialog):
         self.user_name = ""
         self.user_permissions: list[str] = []
         self._mysql_ready = False
+        self._login_busy = False
+        self._login_password = ""
+        self._closing_result: int | None = None
         self._login_workers: set[TaskThread] = set()
         self.setWindowTitle(f"Iniciar sesión · {config.HOTEL_NAME}")
         self.setWindowIcon(QIcon(str(config.APP_DIR.parent / "usuario/img/hotel-las-colinas.svg")))
@@ -883,58 +886,64 @@ class LoginDialog(QDialog):
             available = screen.availableGeometry()
             self.move(available.center() - self.rect().center())
         self._fit_login_card()
-        self.card.submit_button.setEnabled(False)
+        self.card.submit_button.setEnabled(True)
         self.card.error_label.setText("")
-        QTimer.singleShot(0, self._connect_mysql_async)
 
     def _track_login_worker(self, worker: TaskThread) -> None:
         self._login_workers.add(worker)
-        worker.finished.connect(lambda current=worker: self._login_workers.discard(current))
+        worker.finished.connect(self._login_worker_finished)
         worker.finished.connect(worker.deleteLater)
 
-    def _connect_mysql_async(self) -> None:
-        worker = TaskThread(lambda token: initialize_database(), self)
-        self._track_login_worker(worker)
-        worker.succeeded.connect(self._mysql_connected)
-        worker.failed.connect(self._mysql_failed)
-        worker.start()
-
-    def _mysql_connected(self, _result: Any) -> None:
-        self._mysql_ready = True
-        self.card.email.setEnabled(True)
-        self.card.password.setEnabled(True)
-        self.card.submit_button.setEnabled(True)
-        self.card.error_label.setText("")
-        (self.card.password if self.card.email.text().strip() else self.card.email).setFocus()
-
-    def _mysql_failed(self, message: str) -> None:
-        self._mysql_ready = False
-        self.card.submit_button.setEnabled(False)
-        self.card.error_label.setText("El servicio no está disponible. Intenta nuevamente más tarde.")
+    @Slot()
+    def _login_worker_finished(self) -> None:
+        worker = self.sender()
+        if worker in self._login_workers:
+            # finished is emitted before the thread's final cleanup. Join only
+            # here, after the task has returned, before releasing its owner.
+            worker.wait()
+            self._login_workers.discard(worker)
+        if self._closing_result is not None and not self._login_workers:
+            super().done(self._closing_result)
 
     def authenticate(self, email: str, password: str) -> None:
-        if not self._mysql_ready:
+        if self._login_busy or self._closing_result is not None:
             return
         if not email or not password:
             self.card.error_label.setText("Escribe tu correo y contraseña para continuar.")
             return
+        self._login_busy = True
         self.card.submit_button.setEnabled(False)
         self.card.error_label.setText("")
         self._login_password = password
-        worker = TaskThread(lambda token: AuthService.authenticate(email, password), self)
+        database_ready = self._mysql_ready
+
+        def validate_account(token: CancellationToken) -> dict[str, Any] | None:
+            if not database_ready:
+                initialize_database()
+            token.raise_if_cancelled()
+            return AuthService.authenticate(email, password)
+
+        worker = TaskThread(validate_account, self)
         self._track_login_worker(worker)
         worker.succeeded.connect(self._authentication_finished)
         worker.failed.connect(self._authentication_failed)
         worker.start()
 
+    @Slot(object)
     def _authentication_finished(self, account: dict[str, Any] | None) -> None:
-        self.card.submit_button.setText("Iniciar sesión")
-        self.card.submit_button.setEnabled(True)
+        if self._closing_result is not None:
+            return
+        self._mysql_ready = True
         if account is None:
             self._login_password = ""
+            self._login_busy = False
+            self.card.submit_button.setEnabled(True)
             self.card.error_label.setText("El correo o la contraseña no son correctos, o la cuenta está suspendida.")
             return
         if account["role"] not in ("Administrador", "Recepcionista"):
+            self._login_password = ""
+            self._login_busy = False
+            self.card.submit_button.setEnabled(True)
             self.card.error_label.setText(
                 "La cuenta de huésped debe iniciar sesión desde la página web."
             )
@@ -944,23 +953,42 @@ class LoginDialog(QDialog):
         self.user_email = account["email"]
         self.user_name = account["name"]
         self.user_permissions = account["permissions"]
-        self.card.save_login_preferences(self.user_email, getattr(self, "_login_password", self.card.password.text()))
+        self.card.save_login_preferences(self.user_email, self._login_password)
         self._login_password = ""
-        super().accept()
+        self.done(QDialog.DialogCode.Accepted)
 
+    @Slot(str)
     def _authentication_failed(self, message: str) -> None:
+        if self._closing_result is not None:
+            return
         self._login_password = ""
-        self.card.submit_button.setText("Iniciar sesión")
+        self._login_busy = False
         self.card.submit_button.setEnabled(True)
-        self.card.error_label.setText(f"No se pudo validar la cuenta: {message}")
+        self.card.error_label.setText(
+            "No se pudo completar el acceso. Revisa tu conexión e intenta iniciar sesión nuevamente."
+        )
+
+    def done(self, result: int) -> None:
+        if self._closing_result is not None:
+            return
+        if any(worker.isRunning() for worker in self._login_workers):
+            self._closing_result = result
+            self._login_password = ""
+            self.card.setEnabled(False)
+            for worker in self._login_workers:
+                worker.request_cancel()
+            return
+        super().done(result)
 
     def reject(self) -> None:
-        running = [worker for worker in self._login_workers if worker.isRunning()]
-        for worker in running:
-            worker.request_cancel()
-        for worker in running:
-            worker.wait(6000)
-        super().reject()
+        self.done(QDialog.DialogCode.Rejected)
+
+    def closeEvent(self, event) -> None:
+        if any(worker.isRunning() for worker in self._login_workers):
+            event.ignore()
+            self.reject()
+            return
+        super().closeEvent(event)
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
@@ -2766,20 +2794,272 @@ class FrontDeskPaymentMixin:
         }
 
 
+class ReservationGuestPicker(QWidget):
+    """Select an existing guest or enter a new guest without leaving the booking form."""
+
+    def __init__(self, guests: list[dict[str, Any]], parent=None) -> None:
+        super().__init__(parent)
+        self.guests = guests
+        self.creating = False
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(8)
+        row = QHBoxLayout()
+        self.combo = QComboBox()
+        self.combo.setEditable(True)
+        self.combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        self.combo.setPlaceholderText("Busca por nombre, correo, teléfono o documento")
+        self.combo.setMaxVisibleItems(10)
+        for guest in guests:
+            details = [guest["name"], guest["email"]]
+            if guest.get("phone"):
+                details.append(guest["phone"])
+            if guest.get("document_number"):
+                details.append(guest["document_number"])
+            self.combo.addItem(" · ".join(details), guest["id"])
+        self.combo.setCurrentIndex(-1)
+        self.combo.lineEdit().setPlaceholderText("Busca por nombre, correo, teléfono o documento")
+        completer = self.combo.completer()
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        completer.setFilterMode(Qt.MatchFlag.MatchContains)
+        completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+        popup = completer.popup()
+        popup.setStyleSheet("""
+            QListView {
+                background-color: #ffffff;
+                color: #173b40;
+                border: 1px solid #cddede;
+                border-radius: 8px;
+                padding: 4px;
+                outline: 0;
+                selection-background-color: #e1f1f1;
+                selection-color: #123f45;
+            }
+            QListView::item {
+                min-height: 32px;
+                padding: 6px 10px;
+                border-radius: 5px;
+            }
+            QListView::item:hover {
+                background-color: #edf6f6;
+                color: #123f45;
+            }
+            QListView::item:selected {
+                background-color: #dceeee;
+                color: #123f45;
+            }
+        """)
+        row.addWidget(self.combo, 1)
+        self.toggle_button = make_button("+ Nuevo huésped")
+        self.toggle_button.clicked.connect(self.toggle_new_guest)
+        row.addWidget(self.toggle_button)
+        root.addLayout(row)
+
+        self.existing_info = QFrame()
+        info_form = QFormLayout(self.existing_info)
+        info_form.setContentsMargins(10, 8, 10, 8)
+        info_form.setVerticalSpacing(5)
+        self.existing_name = QLineEdit()
+        self.existing_email = QLineEdit()
+        self.existing_phone = QLineEdit()
+        self.existing_document = QLineEdit()
+        for field in (self.existing_name, self.existing_email, self.existing_phone, self.existing_document):
+            field.setReadOnly(True)
+        info_form.addRow("Nombre", self.existing_name)
+        info_form.addRow("Correo", self.existing_email)
+        info_form.addRow("Teléfono", self.existing_phone)
+        info_form.addRow("Documento", self.existing_document)
+        root.addWidget(self.existing_info)
+        self.existing_info.hide()
+
+        self.editor = QFrame()
+        self.editor.setObjectName("paymentSummary")
+        editor_layout = QVBoxLayout(self.editor)
+        editor_layout.setContentsMargins(12, 10, 12, 10)
+        form = QFormLayout()
+        form.setVerticalSpacing(8)
+        self.username = QLineEdit()
+        self.username.setMaxLength(30)
+        self.username.setPlaceholderText("Ej. Jordy Rigby (5–30 caracteres)")
+        self.email = QLineEdit()
+        self.email.setMaxLength(30)
+        self.email.setPlaceholderText("nombre@correo.com")
+        self.phone = LatinAmericanPhone()
+        self.document_type = QComboBox()
+        self.document_type.addItem("Selecciona el tipo de documento")
+        self.document_type.addItems(["Cédula / documento nacional", "Pasaporte", "Otro documento"])
+        self.document_country = SearchableCountryCombo()
+        for code, (name, _pattern, _example, _groups) in config.LATIN_AMERICAN_IDENTITIES.items():
+            self.document_country.addItem(name, code)
+        self.document_country.setCurrentIndex(self.document_country.findData("NI"))
+        self.document = QLineEdit()
+        self.document.setEnabled(False)
+        self.document_label = QLabel("Número de documento *")
+        form.addRow("Nombre de usuario *", self.username)
+        form.addRow("Correo electrónico *", self.email)
+        form.addRow("Teléfono", self.phone)
+        form.addRow("Tipo de documento *", self.document_type)
+        form.addRow("País emisor *", self.document_country)
+        form.addRow(self.document_label, self.document)
+        editor_layout.addLayout(form)
+        root.addWidget(self.editor)
+        self.editor.hide()
+        self.document_country.hide()
+        self.document_country_label = form.labelForField(self.document_country)
+        if self.document_country_label:
+            self.document_country_label.hide()
+        self.combo.currentIndexChanged.connect(self.show_existing_guest)
+        self.combo.editTextChanged.connect(self._guest_text_changed)
+        self.document_type.currentIndexChanged.connect(self.update_document_rules)
+        self.document_country.currentIndexChanged.connect(self.update_document_rules)
+        self.document.textEdited.connect(self.format_nicaraguan_id)
+
+    def toggle_new_guest(self) -> None:
+        self.creating = not self.creating
+        self.editor.setVisible(self.creating)
+        self.existing_info.setVisible(not self.creating)
+        self.combo.setEnabled(not self.creating)
+        self.toggle_button.setText("Cancelar alta" if self.creating else "+ Nuevo huésped")
+        if self.creating:
+            self.combo.setCurrentIndex(-1)
+            self.existing_info.hide()
+            self.username.setFocus()
+        else:
+            self.clear_new_guest()
+            self.existing_info.show()
+            self.show_existing_guest(self.combo.currentIndex())
+
+    def clear_new_guest(self) -> None:
+        self.username.clear()
+        self.email.clear()
+        self.phone.setText("")
+        self.document_type.setCurrentIndex(0)
+        self.document.clear()
+
+    def selected_guest_id(self) -> int | None:
+        index = self.combo.currentIndex()
+        if index < 0 or self.combo.currentText().strip() != self.combo.itemText(index):
+            return None
+        return self.combo.itemData(index)
+
+    def _guest_text_changed(self, _text: str) -> None:
+        self.show_existing_guest(self.combo.currentIndex())
+
+    def show_existing_guest(self, index: int) -> None:
+        if self.creating:
+            return
+        guest_id = self.selected_guest_id()
+        guest = next((row for row in self.guests if row["id"] == guest_id), None)
+        if guest is None:
+            self.existing_info.hide()
+            for field in (self.existing_name, self.existing_email, self.existing_phone, self.existing_document):
+                field.clear()
+            return
+        self.existing_info.show()
+        self.existing_name.setText(guest["name"])
+        self.existing_email.setText(guest["email"])
+        self.existing_phone.setText(guest.get("phone") or "")
+        self.existing_document.setText(guest.get("document_number") or "")
+
+    def update_document_rules(self, _index: int = 0) -> None:
+        kind = self.document_type.currentIndex()
+        country = self.document_country.currentData()
+        self.document.clear()
+        self.document.setInputMask("")
+        self.document.setValidator(None)
+        self.document.setMaxLength(30)
+        self.document_country.setVisible(kind == 1)
+        if self.document_country_label:
+            self.document_country_label.setVisible(kind == 1)
+        self.document.setEnabled(kind > 0)
+        if kind == 1:
+            self.document_label.setText("Número de documento nacional *")
+            self.document.setPlaceholderText(config.LATIN_AMERICAN_IDENTITIES[country][2])
+            if country == "NI":
+                self.document.setMaxLength(16)
+                self.document.setValidator(NicaraguanCedulaValidator(self.document))
+            elif country in {"GT", "SV", "HN", "CR", "BZ"}:
+                self.document.setValidator(QRegularExpressionValidator(QRegularExpression(r"[0-9 -]{0,30}"), self.document))
+            else:
+                self.document.setValidator(QRegularExpressionValidator(QRegularExpression(r"[A-Za-z0-9 .-]{0,30}"), self.document))
+        elif kind == 2:
+            self.document_label.setText("Número de pasaporte *")
+            self.document.setPlaceholderText("Ej. A12345678 · letras y números")
+            self.document.setValidator(QRegularExpressionValidator(QRegularExpression(r"[A-Za-z0-9]{0,30}"), self.document))
+        elif kind == 3:
+            self.document_label.setText("Número de documento *")
+            self.document.setPlaceholderText("Letras, números o guiones")
+        else:
+            self.document_label.setText("Número de documento *")
+            self.document.setPlaceholderText("Selecciona primero el tipo")
+
+    def format_nicaraguan_id(self, text: str) -> None:
+        if self.document_type.currentIndex() != 1 or self.document_country.currentData() != "NI":
+            return
+        cursor = self.document.cursorPosition()
+        characters = sum(char.isalnum() for char in text[:cursor])
+        formatted = config.format_national_identity("NI", text)
+        self.document.setText(formatted)
+        position = count = 0
+        while position < len(formatted) and count < characters:
+            count += formatted[position].isalnum()
+            position += 1
+        self.document.setCursorPosition(position)
+
+    def validate_selection(self) -> None:
+        if not self.creating:
+            if self.selected_guest_id() is None:
+                raise ValueError("Selecciona un huésped guardado o usa «Nuevo huésped».")
+            return
+        try:
+            config.validate_desktop_contact(
+                self.username.text(), self.email.text(), self.phone.text(),
+                phone_country=self.phone.country.currentData(),
+            )
+            config.normalize_guest_document(self.values()["new_guest"]["document_number"])
+        except ValueError as error:
+            raise ValueError(str(error)) from error
+        email = self.email.text().strip().casefold()
+        duplicate = next((index for index, guest in enumerate(self.guests) if guest["email"].casefold() == email), None)
+        if duplicate is not None:
+            self.creating = False
+            self.editor.hide()
+            self.existing_info.show()
+            self.combo.setEnabled(True)
+            self.toggle_button.setText("+ Nuevo huésped")
+            self.combo.setCurrentIndex(duplicate)
+            self.show_existing_guest(duplicate)
+            raise ValueError("Ese correo ya está registrado. Se seleccionó el huésped existente.")
+
+    def values(self) -> dict[str, Any]:
+        if not self.creating:
+            return {"guest_id": self.selected_guest_id(), "new_guest": None}
+        document_type = {1: "CI", 2: "PAS", 3: "OTRO"}.get(self.document_type.currentIndex(), "")
+        if document_type == "CI" and self.document_country.currentData() != "NI":
+            document_type = f"CI-{self.document_country.currentData()}"
+        document_number = self.document.text().strip().upper()
+        return {
+            "guest_id": None,
+            "new_guest": {
+                "username": self.username.text().strip(),
+                "email": self.email.text().strip().lower(),
+                "phone": self.phone.text().strip(),
+                "document_number": f"{document_type}:{document_number}" if document_number else "",
+            },
+        }
+
+
 class ReservationDialog(FrontDeskPaymentMixin, AdaptiveDialog):
     def __init__(self, options: dict[str, list[dict[str, Any]]], parent=None) -> None:
         super().__init__(parent)
         self.rooms_data = options["rooms"]
+        self.guest_options = options["guests"]
         self.setWindowTitle("Crear reserva")
         self.resize(680, 740)
         self.setMinimumWidth(520)
         layout = QVBoxLayout(self)
         form = QFormLayout()
-        self.guest = QComboBox()
-        self.guest.setPlaceholderText("Selecciona un huésped")
-        for guest in options["guests"]:
-            self.guest.addItem(f"{guest['name']} · {guest['email']}", guest["id"])
-        self.guest.setCurrentIndex(-1)
+        self.guest_picker = ReservationGuestPicker(self.guest_options, self)
         self.room = QComboBox()
         self.room.setPlaceholderText("No hay habitaciones disponibles")
         for room in options["rooms"]:
@@ -2796,7 +3076,7 @@ class ReservationDialog(FrontDeskPaymentMixin, AdaptiveDialog):
         self.guest_count = QComboBox()
         self.guest_count.setPlaceholderText("Selecciona la cantidad")
         self.room.currentIndexChanged.connect(self.update_guest_capacity)
-        form.addRow("Huésped *", self.guest)
+        form.addRow("Huésped *", self.guest_picker)
         form.addRow("Habitación disponible *", self.room)
         form.addRow("Entrada *", self.check_in)
         form.addRow("Salida *", self.check_out)
@@ -2890,8 +3170,10 @@ class ReservationDialog(FrontDeskPaymentMixin, AdaptiveDialog):
         return float(room["rate"] * nights) if room else 0.0
 
     def validate(self) -> None:
-        if self.guest.currentIndex() < 0:
-            QMessageBox.warning(self, "Falta un huésped", "Primero registra un huésped para crear una reserva.")
+        try:
+            self.guest_picker.validate_selection()
+        except ValueError as error:
+            QMessageBox.warning(self, "Revisa el huésped", str(error))
             return
         if self.room.currentIndex() < 0:
             QMessageBox.warning(self, "No hay habitaciones", "No hay habitaciones disponibles para reservar.")
@@ -2922,7 +3204,7 @@ class ReservationDialog(FrontDeskPaymentMixin, AdaptiveDialog):
 
     def values(self) -> dict[str, Any]:
         return {
-            "guest_id": self.guest.currentData(),
+            **self.guest_picker.values(),
             "room_id": self.room.currentData(),
             "check_in": self.check_in.date().toPython(),
             "check_out": self.check_out.date().toPython(),
@@ -2938,7 +3220,6 @@ class WalkInDialog(FrontDeskPaymentMixin, AdaptiveDialog):
         super().__init__(parent)
         self.rooms_data = options["rooms"]
         self.guest_options = options["guests"]
-        self.new_guests_by_index: dict[int, dict[str, str]] = {}
         self.setWindowTitle("Ingreso presencial")
         self.setMinimumWidth(600)
         self.resize(680, 590)
@@ -2958,35 +3239,8 @@ class WalkInDialog(FrontDeskPaymentMixin, AdaptiveDialog):
         form.setHorizontalSpacing(16)
         form.setVerticalSpacing(11)
 
-        guest_row = QHBoxLayout()
-        guest_row.setSpacing(8)
-        self.guest = QComboBox()
-        self.guest.setEditable(True)
-        self.guest.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
-        self.guest.setMaxVisibleItems(10)
-        for guest in self.guest_options:
-            details = [guest["name"], guest["email"]]
-            if guest.get("phone"):
-                details.append(guest["phone"])
-            if guest.get("document_number"):
-                details.append(guest["document_number"])
-            self.guest.addItem(" · ".join(details), guest["id"])
-        self.guest.lineEdit().setPlaceholderText("Escribe nombre, correo, teléfono o documento")
-        completer = self.guest.completer()
-        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-        completer.setFilterMode(Qt.MatchFlag.MatchContains)
-        completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
-        completer.popup().setStyleSheet(
-            "QAbstractItemView { background: #ffffff; color: #173e46; "
-            "selection-background-color: #d9eff0; selection-color: #173e46; "
-            "border: 1px solid #cddede; padding: 4px; }"
-        )
-        self.guest.setCurrentIndex(-1)
-        guest_row.addWidget(self.guest, 1)
-        add_guest = make_button("+ Nuevo huésped")
-        add_guest.clicked.connect(self.register_guest)
-        guest_row.addWidget(add_guest)
-        form.addRow("Huésped *", guest_row)
+        self.guest_picker = ReservationGuestPicker(self.guest_options, self)
+        form.addRow("Huésped *", self.guest_picker)
 
         self.room = QComboBox()
         self.room.setPlaceholderText("No hay habitaciones disponibles")
@@ -3077,30 +3331,6 @@ class WalkInDialog(FrontDeskPaymentMixin, AdaptiveDialog):
         self.update_room_details()
         self.update_dates()
 
-    def register_guest(self) -> None:
-        dialog = GuestDialog(self)
-        if dialog.exec() != QDialog.DialogCode.Accepted:
-            return
-        guest_data = dialog.values()
-        email = guest_data["email"].casefold()
-        for index, guest in enumerate(self.guest_options):
-            if guest["email"].casefold() == email:
-                QMessageBox.information(
-                    self,
-                    "Huésped ya registrado",
-                    "Ese correo ya pertenece a un huésped. Se seleccionó el registro existente.",
-                )
-                self.guest.setCurrentIndex(index)
-                return
-        for index, pending in self.new_guests_by_index.items():
-            if pending["email"].casefold() == email:
-                self.guest.setCurrentIndex(index)
-                return
-        self.guest.addItem(f"{guest_data['username']} · {guest_data['email']} · nuevo", None)
-        index = self.guest.count() - 1
-        self.new_guests_by_index[index] = guest_data
-        self.guest.setCurrentIndex(index)
-
     def update_room_details(self, *_args) -> None:
         room_id = self.room.currentData()
         room = next((entry for entry in self.rooms_data if entry["id"] == room_id), None)
@@ -3127,12 +3357,10 @@ class WalkInDialog(FrontDeskPaymentMixin, AdaptiveDialog):
         return float(room["rate"] * nights) if room else 0.0
 
     def validate(self) -> None:
-        guest_index = self.guest.currentIndex()
-        if guest_index < 0:
-            QMessageBox.warning(self, "Falta un huésped", "Selecciona un huésped o regístralo aquí mismo.")
-            return
-        if self.guest.currentData() is None and guest_index not in self.new_guests_by_index:
-            QMessageBox.warning(self, "Huésped inválido", "Selecciona un registro de huésped válido.")
+        try:
+            self.guest_picker.validate_selection()
+        except ValueError as error:
+            QMessageBox.warning(self, "Revisa el huésped", str(error))
             return
         if self.room.currentIndex() < 0:
             QMessageBox.warning(self, "No hay habitaciones", "No hay habitaciones disponibles para registrar la estancia.")
@@ -3175,10 +3403,8 @@ class WalkInDialog(FrontDeskPaymentMixin, AdaptiveDialog):
         self.accept()
 
     def values(self) -> dict[str, Any]:
-        guest_index = self.guest.currentIndex()
         return {
-            "guest_id": self.guest.currentData(),
-            "new_guest": self.new_guests_by_index.get(guest_index),
+            **self.guest_picker.values(),
             "room_id": self.room.currentData(),
             "check_in": self.check_in.date().toPython(),
             "check_out": self.check_out.date().toPython(),
@@ -3939,9 +4165,7 @@ class MainWindow(QMainWindow):
         self.guest_search = QLineEdit()
         self.guest_search.setPlaceholderText("Buscar por usuario, correo o teléfono")
         self.guest_search.setMinimumWidth(160)
-        add = make_button("+ Nuevo huésped", True)
         toolbar.addWidget(self.guest_search, 1)
-        toolbar.addWidget(add)
         page.content_layout.addWidget(filter_card)
         page.adapt_row(toolbar, 650)
 
@@ -4011,7 +4235,6 @@ class MainWindow(QMainWindow):
         page.content_layout.addLayout(content, 1)
         page.adapt_row(content, 1000)
         self.guest_search.textChanged.connect(self.load_guests)
-        add.clicked.connect(self.create_guest)
         self.guest_table.cellClicked.connect(lambda row, _column: self._show_guest_profile(row, 0))
         return page
 
@@ -4688,13 +4911,6 @@ class MainWindow(QMainWindow):
     def _room_data_by_id(self, room_id: int, rows: list[dict[str, Any]]) -> dict[str, Any] | None:
         return next((row for row in rows if row["id"] == room_id), None)
 
-    def create_guest(self) -> None:
-        dialog = GuestDialog(self)
-        if dialog.exec() != QDialog.DialogCode.Accepted:
-            return
-        values = dialog.values()
-        self.run_job(lambda token: HotelRepository.save_guest(values), lambda _id: self.load_guests())
-
     def create_room(self) -> None:
         if self.is_receptionist:
             return
@@ -4771,22 +4987,23 @@ class MainWindow(QMainWindow):
 
     def create_reservation(self) -> None:
         def open_dialog(options: dict[str, list[dict[str, Any]]]) -> None:
-            if not options["guests"]:
-                answer = QMessageBox.question(
-                    self, "Todavía no hay huéspedes", "Registra un huésped antes de crear la reserva. ¿Quieres abrir esa sección?"
-                )
-                if answer == QMessageBox.StandardButton.Yes:
-                    self.navigate("Huéspedes")
-                return
             if not options["rooms"]:
                 QMessageBox.information(self, "Sin habitaciones disponibles", "No hay habitaciones disponibles para una nueva reserva.")
                 return
             dialog = ReservationDialog(options, self)
             if dialog.exec() == QDialog.DialogCode.Accepted:
                 values = dialog.values()
+
+                def saved(_reservation_id: int) -> None:
+                    self.load_reservations()
+                    self.load_dashboard()
+                    self.load_payments()
+                    if values.get("new_guest"):
+                        self.load_guests()
+
                 self.run_job(
                     lambda token: HotelRepository.create_reservation(values),
-                    lambda _id: (self.load_reservations(), self.load_dashboard(), self.load_payments()),
+                    saved,
                 )
 
         self.run_job(lambda token: HotelRepository.reservation_options(), open_dialog)

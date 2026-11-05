@@ -42,7 +42,11 @@ def _database_url() -> URL:
 
 
 def _connection_options() -> dict:
-    options = {"connect_timeout": config.MYSQL_CONNECT_TIMEOUT}
+    options = {
+        "connect_timeout": config.MYSQL_CONNECT_TIMEOUT,
+        "read_timeout": 15,
+        "write_timeout": 15,
+    }
     if config.MYSQL_SSL:
         context = ssl.create_default_context(cafile=config.MYSQL_SSL_CA or None)
         if config.MYSQL_SSL_CA_PEM:

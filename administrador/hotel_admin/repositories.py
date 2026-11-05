@@ -427,7 +427,20 @@ class HotelRepository:
         with SessionLocal() as session:
             try:
                 room = session.scalar(select(Room).where(Room.id == data["room_id"]).with_for_update())
-                guest = session.get(Guest, data["guest_id"])
+                new_guest = data.get("new_guest")
+                if new_guest:
+                    username = str(new_guest.get("username", "")).strip()
+                    email = str(new_guest.get("email", "")).strip().lower()
+                    phone = config.validate_desktop_contact(username, email, str(new_guest.get("phone", "")))
+                    document = config.normalize_guest_document(str(new_guest.get("document_number", "")))
+                    existing_guest = session.scalar(select(Guest).where(func.lower(Guest.email) == email))
+                    if existing_guest:
+                        raise ValueError("Ya existe un huésped con ese correo. Selecciónalo de la lista.")
+                    guest = Guest(username=username, email=email, phone=phone or None, document_number=document)
+                    session.add(guest)
+                    session.flush()
+                else:
+                    guest = session.get(Guest, data.get("guest_id"))
                 if room is None or not room.active or room.status != "Disponible":
                     raise ValueError("La habitación seleccionada ya no está disponible.")
                 if guest is None or not guest.active:

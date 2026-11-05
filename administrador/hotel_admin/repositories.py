@@ -5,7 +5,7 @@ from typing import Any
 from uuid import uuid4
 import shutil
 
-from sqlalchemy import BigInteger, and_, cast, func, or_, select
+from sqlalchemy import BigInteger, and_, case, cast, func, or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -186,12 +186,16 @@ class HotelRepository:
                 raise
 
     @staticmethod
-    def dashboard() -> dict[str, Any]:
+    def dashboard(include_activity: bool = True) -> dict[str, Any]:
         with SessionLocal() as session:
-            total = session.scalar(select(func.count(Room.id)).where(Room.active.is_(True))) or 0
-            occupied = session.scalar(select(func.count(Room.id)).where(Room.status == "Ocupada", Room.active.is_(True))) or 0
-            available = session.scalar(select(func.count(Room.id)).where(Room.status == "Disponible", Room.active.is_(True))) or 0
-            maintenance = session.scalar(select(func.count(Room.id)).where(Room.status == "Mantenimiento", Room.active.is_(True))) or 0
+            room_counts = dict(session.execute(
+                select(Room.status, func.count(Room.id))
+                .where(Room.active.is_(True)).group_by(Room.status)
+            ).all())
+            total = sum(room_counts.values())
+            occupied = room_counts.get("Ocupada", 0)
+            available = room_counts.get("Disponible", 0)
+            maintenance = room_counts.get("Mantenimiento", 0)
             today = billing.hotel_now().date()
             active_bookings = session.scalar(select(func.count(Reservation.id)).where(Reservation.status.in_(["Confirmada", "En camino", "Hospedado"]))) or 0
             arrivals = session.scalars(
@@ -209,7 +213,7 @@ class HotelRepository:
             week_start_at = datetime.combine(week_start, datetime.min.time())
             created_dates = session.scalars(
                 select(Reservation.created_at).where(Reservation.created_at >= week_start_at)
-            ).all()
+            ).all() if include_activity else []
             for created_at in created_dates:
                 created_day = created_at.date()
                 day_index = (created_day - week_start).days
@@ -221,15 +225,11 @@ class HotelRepository:
                 for index, count in enumerate(week_counts)
             ]
             month_start = today.replace(day=1)
-            income = session.scalar(select(func.coalesce(func.sum(Payment.amount), 0)).where(
-                Payment.status.in_(billing.CASHFLOW_STATES), Payment.paid_at >= month_start
-            )) or Decimal("0")
-            cancellation_fees = session.scalar(select(func.coalesce(func.sum(Payment.amount), 0)).where(
-                Payment.status == billing.FEE_STATE, Payment.paid_at >= month_start
-            )) or Decimal("0")
-            refunds = session.scalar(select(func.coalesce(func.sum(Payment.amount), 0)).where(
-                Payment.status == "Reembolsado", Payment.paid_at >= month_start
-            )) or Decimal("0")
+            income, cancellation_fees, refunds = session.execute(select(
+                func.coalesce(func.sum(case((Payment.status.in_(billing.CASHFLOW_STATES), Payment.amount), else_=0)), 0),
+                func.coalesce(func.sum(case((Payment.status == billing.FEE_STATE, Payment.amount), else_=0)), 0),
+                func.coalesce(func.sum(case((Payment.status == "Reembolsado", Payment.amount), else_=0)), 0),
+            ).where(Payment.paid_at >= month_start)).one()
             return {
                 "total": total, "occupied": occupied, "available": available,
                 "maintenance": maintenance, "bookings": active_bookings,

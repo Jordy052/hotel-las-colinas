@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="../img/hotel-las-colinas.svg">
   <title>Mis reservas | Hotel Las Colinas</title>
-  <link rel="stylesheet" href="../css/reservas.css?v=4">
+  <link rel="stylesheet" href="../css/reservas.css?v=5">
   <script src="../js/configuracion.js?v=2" defer></script>
   <script src="../js/invitado.js?v=1" defer></script>
   <script src="../js/politica.js?v=60" defer></script>
-  <script src="../js/reservas.js?v=92" defer></script>
+  <script src="../js/reservas.js?v=93" defer></script>
   <link rel="stylesheet" href="../css/marca.css?v=1">
   <link rel="stylesheet" href="../css/invitado.css?v=1">
 </head>
@@ -30,8 +30,28 @@
       </div>
       <a class="button primary" href="habitaciones.html">Explorar habitaciones</a>
     </div>
-    <p id="reservation-feedback" class="arrival-notice" role="status" aria-live="polite"></p>
+    <p id="reservation-feedback" class="arrival-notice" tabindex="-1" role="status" aria-live="polite"></p>
     <section class="reservation-list" id="reservation-list" aria-live="polite"></section>
   </main>
+  <dialog class="cancellation-dialog" id="cancel-reservation-dialog" aria-labelledby="cancellation-title" aria-describedby="cancellation-description">
+    <button class="cancellation-close" type="button" data-close-cancellation aria-label="Cerrar confirmación">×</button>
+    <div class="cancellation-heading">
+      <span class="cancellation-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 8v5m0 3h.01M10.3 3.9 2.2 18a2 2 0 0 0 1.7 3h16.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg></span>
+      <p class="cancellation-eyebrow">CANCELACIÓN DE RESERVA</p>
+      <h2 id="cancellation-title">¿Estás seguro de que quieres cancelar?</h2>
+      <p class="cancellation-reservation" data-cancellation-reservation></p>
+    </div>
+    <p class="cancellation-description" id="cancellation-description">Consultando los importes de tu reserva…</p>
+    <dl class="cancellation-summary" data-cancellation-summary hidden>
+      <div><dt>Pago de la reserva</dt><dd data-cancellation-paid></dd></div>
+      <div class="cancellation-fee"><dt>Cargo por cancelación <span data-cancellation-percentage></span></dt><dd data-cancellation-charge></dd></div>
+      <div class="cancellation-refund"><dt>Recibirás de reembolso</dt><dd data-cancellation-refund></dd></div>
+    </dl>
+    <p class="cancellation-error" data-cancellation-error role="status" aria-live="polite"></p>
+    <div class="cancellation-actions">
+      <button class="button secondary" type="button" data-keep-reservation autofocus>Conservar reserva</button>
+      <button class="button cancellation-confirm" type="button" data-confirm-cancellation disabled>Sí, cancelar reserva</button>
+    </div>
+  </dialog>
 </body>
 </html>

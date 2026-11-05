@@ -35,6 +35,13 @@ TEAL = "#087986"
 MUTED = "#71868b"
 LINE = "#dce8e8"
 
+def normalized_search(value: str) -> str:
+    return "".join(
+        character for character in unicodedata.normalize("NFKD", value.casefold())
+        if not unicodedata.combining(character)
+    )
+
+
 CALENDAR_POPUP_STYLE = r"""
 QCalendarWidget#reservationCalendar {
     background: #ffffff;
@@ -4143,7 +4150,11 @@ class MainWindow(QMainWindow):
         check_out.clicked.connect(lambda: self.set_reservation_status("Finalizada"))
         cancel.clicked.connect(self.cancel_reservation)
         self.reservation_table.doubleClicked.connect(self.cancel_reservation)
-        self.reservation_search.textChanged.connect(lambda: self.load_reservations())
+        self._reservation_search_timer = QTimer(self)
+        self._reservation_search_timer.setSingleShot(True)
+        self._reservation_search_timer.setInterval(250)
+        self._reservation_search_timer.timeout.connect(self.load_reservations)
+        self.reservation_search.textChanged.connect(lambda: self._reservation_search_timer.start())
         self.reservation_status.currentTextChanged.connect(lambda: self.load_reservations())
         return page
 
@@ -4755,7 +4766,7 @@ class MainWindow(QMainWindow):
         self.load_dashboard()
 
     def load_dashboard(self) -> None:
-        self.run_job(lambda token: HotelRepository.dashboard(), self.dashboard_page.set_data)
+        self.run_job(lambda token: HotelRepository.dashboard(include_activity=not self.is_receptionist), self.dashboard_page.set_data)
 
     def load_reports(self) -> None:
         self.run_job(lambda token: HotelRepository.report_summary(), self.show_reports)
@@ -4787,11 +4798,20 @@ class MainWindow(QMainWindow):
         search = self.room_search.text().strip()
         status = self.room_status.currentText()
         def fetch(token: CancellationToken) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-            visible = HotelRepository.rooms(search, status)
+            rows = HotelRepository.rooms()
             token.raise_if_cancelled()
-            return visible, HotelRepository.rooms()
+            query = normalized_search(search)
+            visible = [room for room in rows
+                       if (status == "Todos" or room["status"] == status)
+                       and (not query or any(query in normalized_search(str(room[key])) for key in ("number", "category")))]
+            return visible, rows
 
-        self.run_job(fetch, lambda result: self.show_rooms(*result))
+        def completed(result) -> None:
+            if search != self.room_search.text().strip() or status != self.room_status.currentText():
+                return
+            self.show_rooms(*result)
+
+        self.run_job(fetch, completed)
 
     def show_rooms(self, rows: list[dict[str, Any]], all_rows: list[dict[str, Any]] | None = None) -> None:
         all_rows = all_rows if all_rows is not None else rows
@@ -4960,18 +4980,22 @@ class MainWindow(QMainWindow):
             elif self.stack.currentWidget() is self.page_views.get("Pagos"):
                 self.run_job(lambda token: HotelRepository.payments(), self.show_payments, lambda _message: None)
             elif self.stack.currentWidget() is self.page_views.get(self.home_section):
-                self.run_job(lambda token: HotelRepository.dashboard(), self.dashboard_page.set_data, lambda _message: None)
+                self.run_job(lambda token: HotelRepository.dashboard(include_activity=not self.is_receptionist), self.dashboard_page.set_data, lambda _message: None)
 
     def load_reservations(self, background: bool = False) -> None:
         search = self.reservation_search.text().strip()
         status = self.reservation_status.currentText()
         def fetch(token: CancellationToken) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-            visible = HotelRepository.reservations(search, status)
+            rows = HotelRepository.reservations()
             token.raise_if_cancelled()
-            return visible, HotelRepository.reservations()
+            query = normalized_search(search)
+            visible = [reservation for reservation in rows
+                       if (status == "Todos" or reservation["status"] == status)
+                       and (not query or any(query in normalized_search(str(reservation[key])) for key in ("code", "guest")))]
+            return visible, rows
 
         def completed(result) -> None:
-            if background and (search != self.reservation_search.text().strip() or status != self.reservation_status.currentText()):
+            if search != self.reservation_search.text().strip() or status != self.reservation_status.currentText():
                 return
             selected = self._selected_id(self.reservation_table)
             position = self.reservation_table.verticalScrollBar().value()

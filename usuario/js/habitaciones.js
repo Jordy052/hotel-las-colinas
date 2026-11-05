@@ -13,13 +13,14 @@
       settings.body = JSON.stringify(settings.body);
     }
     const token = sessionStorage.getItem(tokenKey);
-    if (token) {
+    if (token && path.split("?")[0] !== "/rooms") {
       headers.set("Authorization", "Bearer " + token);
     }
     let response;
     try {
       response = await fetch(baseUrl + path, { ...settings, headers: headers });
-    } catch {
+    } catch (error) {
+      if (error.name === "AbortError") throw error;
       throw new Error("El servicio no está disponible en este momento. Intenta de nuevo más tarde.");
     }
     let payload = {};
@@ -61,8 +62,8 @@
   });
 
   window.HotelApi = {
-    get: function (path) {
-      return request(path, { method: "GET" });
+    get: function (path, options = {}) {
+      return request(path, { ...options, method: "GET" });
     },
     post: function (path, body) {
       return request(path, { method: "POST", body: body });
@@ -291,6 +292,16 @@ function openRoomDetails(room) {
   roomDialog.showModal();
 }
 
+function updateSearchPolicy() {
+  document.querySelector("[data-check-in-time]").textContent = CHECK_IN_TIME;
+  document.querySelector("[data-check-out-time]").textContent = CHECK_OUT_TIME;
+  document.querySelector("[data-search-cancellation]").textContent =
+    new Intl.DateTimeFormat("es-NI", {
+      day: "numeric", month: "long", year: "numeric", hour: "numeric", minute: "2-digit",
+      timeZone: "America/Managua"
+    }).format(new Date(getCancellationDeadline(arrivalInput.value)));
+}
+
 function renderRooms() {
   const guestTotal = Number(guestInput.value);
   const nights = getNightCount();
@@ -306,13 +317,7 @@ function renderRooms() {
       : first.rate - second.rate;
   });
 
-  document.querySelector("[data-check-in-time]").textContent = CHECK_IN_TIME;
-  document.querySelector("[data-check-out-time]").textContent = CHECK_OUT_TIME;
-  document.querySelector("[data-search-cancellation]").textContent =
-    new Intl.DateTimeFormat("es-NI", {
-      day: "numeric", month: "long", year: "numeric", hour: "numeric", minute: "2-digit",
-      timeZone: "America/Managua"
-    }).format(new Date(getCancellationDeadline(arrivalInput.value)));
+  updateSearchPolicy();
   searchSummary.textContent =
     visible.length + " habitaciones · " + guestTotal + " huéspedes · " +
     nights + " noches · " + formatDate(arrivalInput.value) +
@@ -354,30 +359,47 @@ function renderRooms() {
 }
 
 let latestRoomSearch = 0;
+let activeRoomSearch = null;
 async function refreshRooms(background = false) {
+  // Do not supersede a slow request every five seconds while it is still loading.
+  if (background && activeRoomSearch) return;
+  if (!arrivalInput.value || !departureInput.value) return;
+  if (activeRoomSearch) activeRoomSearch.abort();
+  const controller = new AbortController();
+  activeRoomSearch = controller;
   const searchNumber = ++latestRoomSearch;
-  if (!arrivalInput.value || !departureInput.value) {
-    return;
+  updateSearchPolicy();
+  roomGrid.setAttribute("aria-busy", "true");
+  if (!background) {
+    if (!rooms.length) roomGrid.innerHTML = '<p class="empty-message">Consultando disponibilidad…</p>';
+    roomGrid.querySelectorAll("[data-reserve]").forEach(button => { button.disabled = true; });
+    dialogReserve.disabled = true;
   }
-  if (!background) roomGrid.innerHTML = '<p class="empty-message">Consultando disponibilidad…</p>';
   try {
     const query = new URLSearchParams({
       check_in: arrivalInput.value,
       check_out: departureInput.value,
       guests: guestInput.value
     });
-    const result = await HotelApi.get("/rooms?" + query.toString());
+    const result = await HotelApi.get("/rooms?" + query.toString(), {signal: controller.signal});
     if (searchNumber !== latestRoomSearch) return;
     const incoming = result.rooms || [];
     if (background && JSON.stringify(incoming) === JSON.stringify(rooms)) return;
     rooms = incoming;
     renderRooms();
   } catch (error) {
-    if (background || searchNumber !== latestRoomSearch) return;
+    if (controller.signal.aborted || background || searchNumber !== latestRoomSearch) return;
     rooms = [];
     searchSummary.textContent = "";
     roomGrid.innerHTML =
       '<p class="empty-message">' + escapeHtml(error.message) + '</p>';
+  } finally {
+    if (activeRoomSearch === controller) {
+      activeRoomSearch = null;
+      roomGrid.setAttribute("aria-busy", "false");
+      const selectedRoom = rooms.find(room => room.id === Number(dialogReserve.dataset.reserveRoom));
+      dialogReserve.disabled = !selectedRoom || selectedRoom.availableToBook === false;
+    }
   }
 }
 

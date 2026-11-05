@@ -482,7 +482,7 @@ class HotelApiHandler(BaseHTTPRequestHandler):
             params = parse_qs(parsed.query)
 
             if parsed.path == "/api/health":
-                self._json(200, {"status": "ok", "database": "MySQL"})
+                self._json(200, {"status": "ok", "database": "MySQL", "version": os.getenv("RENDER_GIT_COMMIT", "local")[:12]})
                 return
 
             if parsed.path == "/api/rooms":

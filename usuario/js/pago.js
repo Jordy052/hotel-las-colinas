@@ -244,6 +244,136 @@ if (checkoutUser) {
 }
 
 
+const savedCardPanel = document.querySelector("[data-saved-card-panel]");
+const savedCardDescription = document.querySelector("[data-saved-card-description]");
+const switchCardButton = document.querySelector("[data-switch-card]");
+const removeCardButton = document.querySelector("[data-remove-card]");
+const saveCardButton = document.querySelector("[data-save-card]");
+const cardStorageStatus = document.querySelector("[data-card-storage-status]");
+let savedCard = null;
+let usingSavedCard = false;
+let cardStorageBusy = false;
+let cardEdited = false;
+let cardLookupVersion = 0;
+
+function cardMetadata() {
+  return {
+    holder: cardHolder.value.trim(),
+    last4: cardNumber.value.replace(/\D/g, "").slice(-4),
+    expiry: cardExpiry.value,
+    billing: {
+      email: billingEmail.value.trim(), phone: billingPhone.value.trim(),
+      country: billingCountry.value.trim(), city: billingCity.value.trim(),
+      address: billingAddress.value.trim(), region: billingRegion.value.trim(), postal: billingPostal.value.trim()
+    }
+  };
+}
+
+function showSavedCardPanel() {
+  savedCardPanel.hidden = !savedCard;
+  if (!savedCard) return;
+  savedCardDescription.textContent = "Tarjeta terminada en " + savedCard.last4 + " · " + savedCard.expiry + (savedCard.expired ? " · Vencida" : "");
+  switchCardButton.textContent = usingSavedCard ? "Usar otra tarjeta" : "Usar tarjeta guardada";
+  switchCardButton.disabled = cardStorageBusy || (!usingSavedCard && savedCard.expired);
+  removeCardButton.disabled = cardStorageBusy;
+}
+
+function chooseSavedCard(useSaved, clearCode = true) {
+  usingSavedCard = Boolean(useSaved && savedCard && !savedCard.expired);
+  cardForm.classList.toggle("using-saved-card", usingSavedCard);
+  cardForm.querySelectorAll("[data-new-card-field], [data-card-billing]").forEach(field => { field.hidden = usingSavedCard; });
+  cardDetailsToggle.hidden = usingSavedCard;
+  cardForm.hidden = false;
+  if (clearCode) cardCode.value = "";
+  if (usingSavedCard) {
+    cardHolder.value = savedCard.holder;
+    cardNumber.value = "";
+    cardExpiry.value = savedCard.expiry;
+    const fields = {email:billingEmail, phone:billingPhone, country:billingCountry, city:billingCity,
+      address:billingAddress, region:billingRegion, postal:billingPostal};
+    Object.entries(fields).forEach(([key, field]) => { field.value = savedCard.billing[key] || ""; });
+  } else {
+    cardHolder.value = "";
+    cardNumber.value = "";
+    cardExpiry.value = "";
+    cardDetailsToggle.setAttribute("aria-expanded", "true");
+    cardDetailsToggle.textContent = "Ocultar datos de la tarjeta";
+  }
+  cardForm.querySelectorAll("input").forEach(field => setCardError(field, ""));
+  showSavedCardPanel();
+  updateCardPreview();
+}
+
+async function loadSavedCard() {
+  if (!HotelApi.getToken()) return;
+  const version = ++cardLookupVersion;
+  try {
+    const response = await HotelApi.get("/account/card");
+    if (version !== cardLookupVersion || checkoutCompleted) return;
+    savedCard = response.card;
+    if (savedCard && !savedCard.expired && (!cardEdited || usingSavedCard) && !paymentInProgress) {
+      chooseSavedCard(true);
+    } else if (usingSavedCard && (!savedCard || savedCard.expired)) {
+      chooseSavedCard(false);
+    } else {
+      showSavedCardPanel();
+    }
+    if (savedCard?.expired) cardStorageStatus.textContent = "Tu tarjeta guardada está vencida. Agrega una tarjeta vigente.";
+  } catch {
+    if (version === cardLookupVersion && !checkoutCompleted) cardStorageStatus.textContent = "No se pudo consultar tu tarjeta guardada. Puedes ingresar los datos de una tarjeta para continuar.";
+  }
+}
+
+switchCardButton.addEventListener("click", function () {
+  if (cardStorageBusy || paymentInProgress) return;
+  cardEdited = true;
+  chooseSavedCard(!usingSavedCard);
+  (usingSavedCard ? cardCode : cardHolder).focus();
+});
+saveCardButton.addEventListener("click", async function () {
+  if (cardStorageBusy || paymentInProgress || usingSavedCard) return;
+  if (!validateDemoCard(true)) return;
+  cardStorageBusy = true;
+  ++cardLookupVersion;
+  saveCardButton.disabled = true;
+  saveReservationButton.disabled = true;
+  cardStorageStatus.textContent = "Guardando tarjeta…";
+  try {
+    const response = await HotelApi.post("/account/card", cardMetadata());
+    savedCard = response.card;
+    chooseSavedCard(true, false);
+    cardStorageStatus.textContent = "Tarjeta guardada en tu cuenta. Podrás usarla en tus próximas reservas.";
+  } catch (error) {
+    cardStorageStatus.textContent = error.message;
+  } finally {
+    cardStorageBusy = false;
+    saveCardButton.disabled = false;
+    saveReservationButton.disabled = paymentInProgress || checkoutCompleted;
+    showSavedCardPanel();
+  }
+});
+removeCardButton.addEventListener("click", async function () {
+  if (cardStorageBusy || paymentInProgress) return;
+  cardStorageBusy = true;
+  ++cardLookupVersion;
+  showSavedCardPanel();
+  saveReservationButton.disabled = true;
+  cardStorageStatus.textContent = "Eliminando tarjeta…";
+  try {
+    await HotelApi.post("/account/card/remove", {});
+    savedCard = null;
+    cardEdited = true;
+    chooseSavedCard(false);
+    cardStorageStatus.textContent = "Tarjeta eliminada de tu cuenta.";
+  } catch (error) {
+    cardStorageStatus.textContent = error.message;
+  } finally {
+    cardStorageBusy = false;
+    saveReservationButton.disabled = paymentInProgress || checkoutCompleted;
+    showSavedCardPanel();
+  }
+});
+
 function setCardError(field, message) {
   document.querySelector("#" + field.id + "-error").textContent = message;
   field.setAttribute("aria-invalid", message ? "true" : "false");
@@ -256,7 +386,7 @@ function updateCardPreview() {
   cardExpiry.value = expiryDigits.length > 2
     ? expiryDigits.slice(0, 2) + "/" + expiryDigits.slice(2)
     : expiryDigits;
-  const previewDigits = digits.padEnd(16, "•");
+  const previewDigits = usingSavedCard ? "••••••••••••" + savedCard.last4 : digits.padEnd(16, "•");
   document.querySelector("[data-card-preview-number]").textContent =
     previewDigits.match(/.{4}/g).join(" ");
   document.querySelector("[data-card-preview-holder]").textContent =
@@ -264,10 +394,10 @@ function updateCardPreview() {
   document.querySelector("[data-card-preview-expiry]").textContent = cardExpiry.value || "MM/AA";
 }
 
-function validateDemoCard() {
-  const now = new Date();
+function validateDemoCard(forSaving = false) {
+  const [currentYear, currentMonth] = HotelPolicy.today().split("-").map(Number);
   const expiry = /^(0[1-9]|1[0-2])\/(\d{2})$/.exec(cardExpiry.value);
-  const validExpiry = expiry && new Date(2000 + Number(expiry[2]), Number(expiry[1]), 1) > now;
+  const validExpiry = expiry && (2000 + Number(expiry[2])) * 12 + Number(expiry[1]) >= currentYear * 12 + currentMonth;
   const phoneText = billingPhone.value.trim();
   const phoneDigits = phoneText.replace(/\D/g, "");
   const validPhone = !phoneText || (/^\+?[0-9 ()-]+$/.test(phoneText)
@@ -277,10 +407,10 @@ function validateDemoCard() {
       && billingEmail.value.trim().length <= 254 ? "" : "Escribe un correo electrónico válido."],
     [billingPhone, validPhone ? "" : "Escribe un teléfono de 7 a 15 dígitos; puedes incluir el código del país."],
     [cardHolder, cardHolder.value.trim().length >= 2 ? "" : "Escribe el nombre del titular."],
-    [cardNumber, /^\d{16}$/.test(cardNumber.value.replace(/\s/g, ""))
+    [cardNumber, usingSavedCard || /^\d{16}$/.test(cardNumber.value.replace(/\s/g, ""))
       ? "" : "Escribe 16 dígitos para el número de tarjeta."],
     [cardExpiry, validExpiry ? "" : "Escribe una fecha vigente con el formato MM/AA."],
-    [cardCode, /^\d{3}$/.test(cardCode.value) ? "" : "Escribe un código de 3 dígitos."],
+    [cardCode, forSaving || /^\d{3}$/.test(cardCode.value) ? "" : "Escribe un código de 3 dígitos."],
     [billingCountry, billingCountry.value.trim().length >= 2 && billingCountry.value.trim().length <= 80
       ? "" : "Escribe el país de la dirección de facturación."],
     [billingCity, billingCity.value.trim().length >= 2 && billingCity.value.trim().length <= 80
@@ -306,6 +436,7 @@ function validateDemoCard() {
 }
 
 cardDetailsToggle.addEventListener("click", function () {
+  cardEdited = true;
   cardForm.hidden = !cardForm.hidden;
   cardDetailsToggle.setAttribute("aria-expanded", String(!cardForm.hidden));
   cardDetailsToggle.textContent = cardForm.hidden ? "Editar datos de la tarjeta" : "Ocultar datos de la tarjeta";
@@ -315,6 +446,7 @@ cardDetailsToggle.addEventListener("click", function () {
 });
 
 cardForm.addEventListener("input", function (event) {
+  cardEdited = true;
   setCardError(event.target, "");
   updateCardPreview();
 });
@@ -325,7 +457,7 @@ cardForm.addEventListener("submit", function (event) {
 });
 
 saveReservationButton.addEventListener("click", async function () {
-  if (paymentInProgress || checkoutCompleted) return;
+  if (paymentInProgress || checkoutCompleted || cardStorageBusy) return;
   if (!pendingReservation || !HotelApi.getToken()) {
     sessionStorage.setItem("hotel-return-to", "pago.html");
     window.location.replace("acceso.html");
@@ -355,6 +487,7 @@ saveReservationButton.addEventListener("click", async function () {
       departure: pendingReservation.departure,
       guests: pendingReservation.guests,
       simulatePayment: true,
+      ...(usingSavedCard ? {savedCardToken:savedCard.token} : {cardToSave:cardMetadata()}),
       checkoutToken: pendingReservation.holdToken
     });
     checkoutCompleted = true;
@@ -450,11 +583,17 @@ document.querySelectorAll("a[href]").forEach(link => {
   });
 });
 window.addEventListener("pagehide", () => {
+  cardCode.value = "";
+  cardNumber.value = "";
+  updateCardPreview();
   if (checkoutCompleted || paymentInProgress || !pendingReservation?.holdToken || !HotelRuntime.apiBaseUrl) return;
   fetch(HotelRuntime.apiBaseUrl + "/booking-holds/" + pendingReservation.holdToken + "/release", {
     method: "POST", headers: {"Content-Type": "application/json", "Authorization": "Bearer " + HotelApi.getToken()},
     body: "{}", keepalive: true
   }).catch(() => {});
 });
-window.addEventListener("pageshow", event => { if (event.persisted && pendingReservation) initializeCheckout(); });
-if (showReservationDetails()) initializeCheckout();
+window.addEventListener("pageshow", event => { if (event.persisted && pendingReservation) { initializeCheckout(); loadSavedCard(); } });
+if (showReservationDetails()) {
+  initializeCheckout();
+  loadSavedCard();
+}

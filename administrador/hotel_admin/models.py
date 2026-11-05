@@ -66,6 +66,21 @@ class AppUser(Base):
     )
 
 
+class SavedCard(Base):
+    """Referencia de tarjeta para el checkout; no almacena PAN completo ni CVV."""
+    __tablename__ = "tarjetas_guardadas"
+
+    user_id: Mapped[int] = mapped_column("usuario_id", ForeignKey("usuarios_app.id", ondelete="CASCADE"), primary_key=True)
+    token: Mapped[str] = mapped_column("referencia", String(32), nullable=False, unique=True)
+    holder: Mapped[str] = mapped_column("titular", String(60), nullable=False)
+    last_four: Mapped[str] = mapped_column("ultimos_cuatro", String(4), nullable=False)
+    expiry_month: Mapped[int] = mapped_column("mes_vencimiento", Integer, nullable=False)
+    expiry_year: Mapped[int] = mapped_column("anio_vencimiento", Integer, nullable=False)
+    billing: Mapped[dict] = mapped_column("facturacion", JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column("creado_en", DateTime, default=datetime.now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column("actualizado_en", DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+
+
 class Room(Base):
     __tablename__ = "habitaciones"
 

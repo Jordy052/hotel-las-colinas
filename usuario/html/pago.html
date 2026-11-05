@@ -6,11 +6,11 @@
   <meta name="theme-color" content="#076b78">
   <link rel="icon" type="image/svg+xml" href="../img/hotel-las-colinas.svg">
   <title>Pago de reserva | Hotel Las Colinas</title>
-  <link rel="stylesheet" href="../css/pago.css?v=70">
+  <link rel="stylesheet" href="../css/pago.css?v=71">
   <script src="../js/configuracion.js?v=2" defer></script>
   <script src="../js/invitado.js?v=1" defer></script>
   <script src="../js/politica.js?v=60" defer></script>
-  <script src="../js/pago.js?v=94" defer></script>
+  <script src="../js/pago.js?v=95" defer></script>
   <link rel="stylesheet" href="../css/marca.css?v=1">
   <link rel="stylesheet" href="../css/invitado.css?v=1">
 </head>
@@ -151,26 +151,35 @@
             </div>
           </div>
 
+          <section class="saved-card-panel" data-saved-card-panel aria-label="Tarjeta guardada" hidden>
+            <div><strong>Tu tarjeta guardada</strong><p data-saved-card-description></p></div>
+            <div class="saved-card-actions">
+              <button class="text-button" type="button" data-switch-card>Usar otra tarjeta</button>
+              <button class="text-button" type="button" data-remove-card>Eliminar tarjeta</button>
+            </div>
+          </section>
+          <p class="card-storage-status" data-card-storage-status role="status" aria-live="polite"></p>
+
           <button class="button secondary full-width card-details-toggle" type="button"
             data-card-details-toggle aria-controls="card-data-form" aria-expanded="false">
             Agregar datos de la tarjeta
           </button>
           <form id="card-data-form" class="card-data-form" autocomplete="off" hidden novalidate>
             <h3>Datos de la tarjeta</h3>
-            <div class="card-field">
+            <div class="card-field" data-new-card-field>
               <label for="card-holder">Nombre del titular</label>
               <input id="card-holder" type="text" maxlength="60" placeholder="Nombre como aparece en la tarjeta"
                 aria-describedby="card-holder-error" required>
               <small id="card-holder-error" class="card-field-error" aria-live="polite"></small>
             </div>
-            <div class="card-field">
+            <div class="card-field" data-new-card-field>
               <label for="card-number">Número de tarjeta</label>
               <input id="card-number" type="text" inputmode="numeric" maxlength="19"
                 placeholder="16 dígitos" aria-describedby="card-number-error" required>
               <small id="card-number-error" class="card-field-error" aria-live="polite"></small>
             </div>
             <div class="card-field-row">
-              <div class="card-field">
+              <div class="card-field" data-new-card-field>
                 <label for="card-expiry">Vencimiento</label>
                 <input id="card-expiry" type="text" inputmode="numeric" maxlength="5"
                   placeholder="MM/AA" aria-describedby="card-expiry-error" required>
@@ -183,7 +192,7 @@
                 <small id="card-code-error" class="card-field-error" aria-live="polite"></small>
               </div>
             </div>
-            <fieldset class="billing-fields">
+            <fieldset data-card-billing class="billing-fields">
               <legend>Datos de contacto</legend>
               <div class="card-field-row">
                 <div class="card-field">
@@ -200,7 +209,7 @@
                 </div>
               </div>
             </fieldset>
-            <fieldset class="billing-fields" aria-describedby="billing-description">
+            <fieldset data-card-billing class="billing-fields" aria-describedby="billing-description">
               <legend>Dirección de facturación</legend>
               <p id="billing-description">Completa la dirección del titular de la tarjeta.</p>
               <div class="card-field-row">
@@ -251,6 +260,10 @@
                 </div>
               </div>
             </fieldset>
+            <div class="card-save-actions" data-new-card-field>
+              <p>Guarda esta tarjeta en tu cuenta para tus próximas reservas. El código de seguridad se pide en cada pago.</p>
+              <button class="button secondary" type="button" data-save-card>Guardar tarjeta</button>
+            </div>
           </form>
 
           <button class="button primary full-width" type="button" data-simulate-payment>

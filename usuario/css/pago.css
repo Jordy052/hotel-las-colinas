@@ -897,3 +897,21 @@ nav a:hover,
 }
 
 .hold-notice {padding:12px 14px;border:1px solid #cfe1e1;border-radius:12px;color:#076b78;background:#eaf4f3;font-weight:600;}
+
+.saved-card-panel { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 20px 0 12px; padding: 18px; border: 1px solid #c9e0de; border-radius: 16px; background: #f0f8f5; color: #173d45; }
+.saved-card-panel[hidden], .card-details-toggle[hidden], .card-data-form [hidden] { display: none; }
+.saved-card-panel strong { font-size: 16px; }
+.saved-card-panel p { margin: 6px 0 0; color: #476168; font-size: 14px; }
+.saved-card-actions { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.saved-card-actions .text-button { margin: 0; padding: 6px 0; font-size: 13px; text-align: left; }
+.saved-card-actions [data-remove-card] { color: #a44632; }
+.card-storage-status { margin: 10px 0 16px; color: #476168; font-size: 14px; line-height: 1.5; }
+.card-storage-status:empty { display: none; }
+.card-save-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding-top: 16px; border-top: 1px solid #dce8e8; }
+.card-save-actions p { flex: 1 1 250px; margin: 0; color: #526b72; font-size: 13px; line-height: 1.6; }
+.card-data-form.using-saved-card .card-field-row { grid-template-columns: 1fr; }
+.saved-card-panel button:disabled, [data-save-card]:disabled { opacity: .6; cursor: wait; }
+@media (max-width: 620px) {
+  .saved-card-panel { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .card-save-actions .button { width: 100%; }
+}

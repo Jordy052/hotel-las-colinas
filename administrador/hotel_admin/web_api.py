@@ -25,12 +25,12 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload, selectinload
 
-from hotel_admin import config, billing, checkout
+from hotel_admin import config, billing, checkout, payment_cards
 from hotel_admin.photos import read_photo
 from hotel_admin import mail_delivery
 from hotel_admin.auth import AuthService
 from hotel_admin.database import SessionLocal, initialize_database
-from hotel_admin.models import AppUser, Guest, Payment, Reservation, Role, Room, RoomPhoto, RoomPhotoAsset
+from hotel_admin.models import AppUser, Guest, Payment, Reservation, Role, Room, RoomPhoto, RoomPhotoAsset, SavedCard
 from hotel_admin.security import MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, hash_password, verify_password
 
 
@@ -550,6 +550,14 @@ class HotelApiHandler(BaseHTTPRequestHandler):
                 self._json(200, result)
                 return
 
+            if parsed.path == "/api/account/card":
+                user = _user_from_token(self._token())
+                with SessionLocal() as session:
+                    card = session.get(SavedCard, user.id)
+                    result = payment_cards.describe(card) if card else None
+                self._json(200, {"card": result})
+                return
+
             if parsed.path == "/api/account":
                 user = _user_from_token(self._token())
                 self._json(200, {"id": user.id, "name": user.username,
@@ -707,6 +715,29 @@ class HotelApiHandler(BaseHTTPRequestHandler):
                     _password_reset_codes.pop(email, None)
                     _invalidate_user_sessions(user_id)
 
+                self._json(200, {"ok": True})
+                return
+
+            if path == "/api/account/card":
+                user = _user_from_token(self._token())
+                with SessionLocal() as session:
+                    try:
+                        card = payment_cards.save_card(session, user.id, data)
+                    except ValueError as error:
+                        raise ApiError(400, str(error)) from error
+                    session.commit()
+                    result = payment_cards.describe(card)
+                self._json(200, {"card": result})
+                return
+
+            if path == "/api/account/card/remove":
+                user = _user_from_token(self._token())
+                with SessionLocal() as session:
+                    session.scalar(select(AppUser.id).where(AppUser.id == user.id).with_for_update())
+                    card = session.get(SavedCard, user.id)
+                    if card:
+                        session.delete(card)
+                    session.commit()
                 self._json(200, {"ok": True})
                 return
 
@@ -883,6 +914,11 @@ class HotelApiHandler(BaseHTTPRequestHandler):
                         existing = session.get(Reservation, hold.reservation_id)
                         self._json(200, _reservation_payload(existing, self._host()))
                         return
+                    if data.get("savedCardToken") is not None:
+                        try:
+                            payment_cards.require_saved_card(session, user.id, data["savedCardToken"])
+                        except ValueError as error:
+                            raise ApiError(409, str(error)) from error
                     if not room.active or room.status in ("Mantenimiento", "Inactiva"):
                         raise ApiError(409, "La habitación ya no está disponible.")
                     if guests > room.capacity:
@@ -934,6 +970,11 @@ class HotelApiHandler(BaseHTTPRequestHandler):
                         reference=f"SIM-PAY-{uuid4().hex[:16].upper()}",
                         paid_at=billing.hotel_now(),
                     ))
+                    if data.get("cardToSave") is not None:
+                        try:
+                            payment_cards.save_card(session, user.id, data["cardToSave"])
+                        except ValueError as error:
+                            raise ApiError(400, str(error)) from error
                     hold.reservation_id = reservation.id
                     session.commit()
                     reservation_id = reservation.id

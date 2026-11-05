@@ -1579,7 +1579,6 @@ class DashboardPage(Page):
         quick_actions = (
             (
                 ("→", "Registrar llegada", "Recibe a un huésped con reserva", "Reservas"),
-                ("+", "Ingreso presencial", "Registra una estancia en recepción", "Reservas"),
                 ("↗", "Registrar salida", "Cierra una estancia", "Reservas"),
             )
             if self.is_receptionist
@@ -3896,14 +3895,12 @@ class MainWindow(QMainWindow):
         check_in = make_button("Registrar llegada")
         check_out = make_button("Registrar salida")
         cancel = make_button("Cancelar reserva")
-        walk_in = make_button("+ Ingreso presencial", True)
-        create = make_button("Crear reserva")
+        create = make_button("Crear reserva", True)
         actions.addStretch(1)
         actions.addWidget(check_in)
         actions.addWidget(check_out)
         actions.addWidget(cancel)
         actions.addWidget(create)
-        actions.addWidget(walk_in)
         filter_layout.addLayout(actions)
         page.adapt_row(actions, 850)
         page.adapt_row(filter_row, 500)
@@ -3916,7 +3913,6 @@ class MainWindow(QMainWindow):
         self.reservation_table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         page.content_layout.addWidget(self.reservation_table, 1)
         create.clicked.connect(self.create_reservation)
-        walk_in.clicked.connect(self.register_walk_in)
         check_in.clicked.connect(lambda: self.set_reservation_status("Hospedado"))
         check_out.clicked.connect(lambda: self.set_reservation_status("Finalizada"))
         cancel.clicked.connect(self.cancel_reservation)

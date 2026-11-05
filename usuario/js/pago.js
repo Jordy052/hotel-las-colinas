@@ -325,14 +325,23 @@ cardForm.addEventListener("submit", function (event) {
 });
 
 saveReservationButton.addEventListener("click", async function () {
-  if (paymentInProgress || !checkoutReady || checkoutCompleted) return;
+  if (paymentInProgress || checkoutCompleted) return;
   if (!pendingReservation || !HotelApi.getToken()) {
     sessionStorage.setItem("hotel-return-to", "pago.html");
     window.location.replace("acceso.html");
     return;
   }
 
+  if (!checkoutReady) {
+    paymentMessage.textContent = "Comprobando la reserva y disponibilidad…";
+    saveReservationButton.disabled = true;
+    saveReservationButton.textContent = "Comprobando reserva…";
+    await initializeCheckout();
+    if (!checkoutReady) return;
+  }
+
   if (!validateDemoCard()) {
+    paymentMessage.textContent = "Completa los datos de la tarjeta de prueba para continuar.";
     return;
   }
   paymentMessage.textContent = "";
@@ -366,12 +375,21 @@ saveReservationButton.addEventListener("click", async function () {
 async function initializeCheckout() {
   checkoutReady = false;
   saveReservationButton.disabled = true;
+  saveReservationButton.textContent = "Conectando al checkout…";
+  paymentMessage.textContent = "Verificando el apartado de la habitación…";
   continueButton.disabled = true;
   try {
     let hold;
     if (pendingReservation.holdToken) {
-      hold = await HotelApi.get("/booking-holds/" + pendingReservation.holdToken);
-    } else {
+      try {
+        hold = await HotelApi.get("/booking-holds/" + pendingReservation.holdToken);
+      } catch (error) {
+        if (!error.message.includes("No se encontró el apartado")) throw error;
+        pendingReservation.holdToken = "";
+      }
+    }
+    if (!hold || hold.state === "Vencida") {
+      pendingReservation.holdToken = "";
       hold = await HotelApi.post("/booking-holds", pendingReservation);
       pendingReservation.holdToken = hold.holdToken;
       sessionStorage.setItem(pendingKey, JSON.stringify(pendingReservation));
@@ -386,9 +404,16 @@ async function initializeCheckout() {
     holdServerOffset = new Date(hold.serverNow).getTime() - Date.now();
     checkoutReady = true;
     saveReservationButton.disabled = false;
+    saveReservationButton.textContent = "Pagar y confirmar reserva";
     continueButton.disabled = !acceptPolicy.checked;
+    paymentMessage.textContent = "";
     showHoldTime();
-  } catch (error) { paymentMessage.textContent = error.message; }
+  } catch (error) {
+    checkoutReady = false;
+    paymentMessage.textContent = error.message || "No se pudo preparar el pago. Pulsa el botón para volver a intentar.";
+    saveReservationButton.disabled = false;
+    saveReservationButton.textContent = "Reintentar pago";
+  }
 }
 
 const holdNotice = document.createElement("p");
@@ -403,9 +428,10 @@ function showHoldTime() {
   if (!seconds) {
     holdNotice.textContent = "El apartado venció. Vuelve a elegir una habitación.";
     checkoutReady = false;
-    saveReservationButton.disabled = true;
+    saveReservationButton.disabled = false;
+    saveReservationButton.textContent = "Reintentar pago";
     continueButton.disabled = true;
-    paymentMessage.textContent = "El apartado venció. Vuelve a elegir una habitación.";
+    paymentMessage.textContent = "El apartado venció. Pulsa el botón para reservar la habitación de nuevo.";
   }
 }
 setInterval(showHoldTime, 1000);
